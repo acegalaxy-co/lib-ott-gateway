@@ -1,5 +1,5 @@
 {
-  "name": "@acegalaxy/ott-gateway",
+  "name": "@acegalaxy-co/ott-gateway",
   "version": "0.1.0",
   "description": "Cross-project inbound OTT gateway: 5-layer default-deny (telegram/whatsapp/teams/slack) with platform policy + audit log + rate limit + identity resolution. Project-agnostic; consumers inject identity map + audit sink + bot tokens via opts.",
   "main": "index.ts",
@@ -17,8 +17,18 @@
   ],
   "author": "acegalaxy.co",
   "license": "UNLICENSED",
-  "private": true,
+  "private": false,
   "engines": {
     "node": ">=18"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/acegalaxy-co/ace_commons-ott-gateway-nodejs.git"
+  },
+  "dependencies": {
+    "@acegalaxy-co/security-utils": "file:../ace_commons-security-utils-nodejs"
   }
 }

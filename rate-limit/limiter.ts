@@ -1,6 +1,6 @@
 "use strict";
 
-const createSlidingWindow = require("../../security-utils-nodejs/rate-limit");
+const createSlidingWindow = require("@acegalaxy-co/security-utils/rate-limit");
 
 const WINDOW_MS: number = 60 * 1000;
 const MAX_REQUESTS: number = 30;

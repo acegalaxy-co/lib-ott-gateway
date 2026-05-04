@@ -1,6 +1,6 @@
 "use strict";
 
-const createReplayGuard = require("../../security-utils-nodejs/rate-limit");
+const createReplayGuard = require("@acegalaxy-co/security-utils/rate-limit");
 
 const TTL_MS: number = 60 * 60 * 1000;
 
