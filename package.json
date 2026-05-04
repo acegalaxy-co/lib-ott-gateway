@@ -1,0 +1,24 @@
+{
+  "name": "@acegalaxy/ott-gateway",
+  "version": "0.1.0",
+  "description": "Cross-project inbound OTT gateway: 5-layer default-deny (telegram/whatsapp/teams/slack) with platform policy + audit log + rate limit + identity resolution. Project-agnostic; consumers inject identity map + audit sink + bot tokens via opts.",
+  "main": "index.ts",
+  "scripts": {
+    "test": "node --test test/"
+  },
+  "keywords": [
+    "ott",
+    "gateway",
+    "telegram",
+    "whatsapp",
+    "teams",
+    "slack",
+    "ace-commons"
+  ],
+  "author": "acegalaxy.co",
+  "license": "UNLICENSED",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  }
+}

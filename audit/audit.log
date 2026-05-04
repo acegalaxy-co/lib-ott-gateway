@@ -1,0 +1,5 @@
+{"ts":"2026-04-21T09:15:16.933Z","platform":"telegram","messageId":"999","platformUserId":"123","identity":"user-admin","command":"/status","outcome":"allow","denyReason":null,"latencyMs":6}
+{"ts":"2026-04-21T15:36:50.945Z","platform":"telegram","messageId":"999","platformUserId":"123","identity":"user-admin","command":"/status","outcome":"allow","denyReason":null,"latencyMs":7}
+{"ts":"2026-04-22T04:37:37.924Z","platform":"telegram","messageId":"999","platformUserId":"123","identity":"user-admin","command":"/status","outcome":"allow","denyReason":null,"latencyMs":8}
+{"ts":"2026-04-22T04:39:04.221Z","platform":"telegram","messageId":"999","platformUserId":"123","identity":"user-admin","command":"/status","outcome":"allow","denyReason":null,"latencyMs":8}
+{"outcome":"test","g":"ott","ts":1777352942757}
