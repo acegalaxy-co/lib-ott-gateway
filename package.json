@@ -4,10 +4,11 @@
   "description": "Inbound message security gateway for bots — 5-layer default-deny (caller-validator, identity-resolver, rate-limit, audit, forward) for Telegram/WhatsApp/WeChat and other OTT platforms.",
   "main": "dist/index.js",
   "scripts": {
-    "test": "node --test test/",
+    "test": "node --test test/*.test.js",
     "build": "tsc",
     "prepublishOnly": "npm run build",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "pretest": "npm run build"
   },
   "keywords": [
     "ott",
