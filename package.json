@@ -54,7 +54,8 @@
     "README.md",
     "LICENSE",
     "CONTRIBUTING.md",
-    "SECURITY.md"
+    "SECURITY.md",
+    "CHANGELOG.md"
   ],
   "devDependencies": {
     "typescript": "^5.7.0",

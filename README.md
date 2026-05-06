@@ -1,5 +1,11 @@
 # @acegalaxy/ott-gateway
 
+[![npm version](https://img.shields.io/npm/v/@acegalaxy%2Fott-gateway.svg)](https://www.npmjs.com/package/@acegalaxy/ott-gateway)
+[![npm downloads](https://img.shields.io/npm/dm/@acegalaxy%2Fott-gateway.svg)](https://www.npmjs.com/package/@acegalaxy/ott-gateway)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node](https://img.shields.io/node/v/@acegalaxy%2Fott-gateway.svg)](https://nodejs.org)
+
+
 **Inbound message security gateway for bots — 5 layers, default-deny.**
 
 Stop bot framework abuse. Most Telegram/WhatsApp/WeChat bot frameworks treat
