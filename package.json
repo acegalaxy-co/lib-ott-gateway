@@ -1,33 +1,37 @@
 {
-  "name": "@acegalaxy-co/ott-gateway",
+  "name": "@acegalaxy/ott-gateway",
   "version": "0.1.0",
-  "description": "Cross-project inbound OTT gateway: 5-layer default-deny (telegram/whatsapp/teams/slack) with platform policy + audit log + rate limit + identity resolution. Project-agnostic; consumers inject identity map + audit sink + bot tokens via opts.",
+  "description": "Inbound message security gateway for bots — 5-layer default-deny (caller-validator, identity-resolver, rate-limit, audit, forward) for Telegram/WhatsApp/WeChat and other OTT platforms.",
   "main": "index.ts",
   "scripts": {
     "test": "node --test test/"
   },
   "keywords": [
     "ott",
-    "gateway",
     "telegram",
     "whatsapp",
-    "teams",
-    "slack",
-    "ace-commons"
+    "bot",
+    "security",
+    "gateway",
+    "authz"
   ],
-  "author": "acegalaxy.co",
-  "license": "UNLICENSED",
+  "author": "ACE Galaxy <hello@acegalaxy.co>",
+  "license": "MIT",
   "private": false,
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
+    "access": "public"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/acegalaxy-co/ace_commons-ott-gateway-nodejs.git"
   },
+  "bugs": {
+    "url": "https://github.com/acegalaxy-co/ace_commons-ott-gateway-nodejs/issues"
+  },
+  "homepage": "https://github.com/acegalaxy-co/ace_commons-ott-gateway-nodejs#readme",
   "dependencies": {
     "@acegalaxy-co/security-utils": "file:../ace_commons-security-utils-nodejs"
   }

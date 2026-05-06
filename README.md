@@ -1,52 +1,89 @@
-# ott-gateway/
+# @acegalaxy/ott-gateway
 
-Per-project OTT inbound gateway for ACE Nexus One. Source of truth for the spec:
-`rules/system/07-ott-gateway-mandatory.md`.
+**Inbound message security gateway for bots — 5 layers, default-deny.**
 
-## What it is
+Stop bot framework abuse. Most Telegram/WhatsApp/WeChat bot frameworks treat
+*"can the bot read this message?"* as the only access check. That's not authz —
+that's just delivery. `ott-gateway` sits between your bot transport and your
+handler and enforces real authorization on every inbound message.
 
-A thin, in-project module that funnels **every inbound OTT message** (Telegram, and
-future WhatsApp/Teams/Slack/Discord/WeChat) through 5 mandatory, default-deny
-security layers before handoff to business logic.
+## Why
 
-Outbound notify continues to use the existing `notify/` channel layer — this module
-does **not** replace it.
+A raw bot token says nothing about *who* is on the other end. Anyone who can
+DM your bot, or get added to a group with it, can hit your handlers. Real
+products need:
 
-## 5 layers → folder map
+- per-platform policy (block bots, block forwarded floods, block unknown chats)
+- mapped identity (Telegram user_id → your internal user/role)
+- rate limits per identity, not per IP
+- audit log of every accept/deny decision
+- a single forward point so handlers never see un-vetted input
 
-| Layer | Purpose                                  | Folder / file                              |
-| ----- | ---------------------------------------- | ------------------------------------------ |
-| L1    | Adapter verify + parse (platform)        | `adapters/<platform>.js`                   |
-| L2    | Identity resolver (platform id → user)   | `identity/resolver.js`                     |
-| L3    | Authz (role-based, per-platform policy)  | `authz/engine.js` + `authz/policies/*.json`|
-| L4    | Rate limit + replay guard                | `rate-limit/limiter.js` + `replay-guard.js`|
-| L5    | Append-only audit log (allow AND deny)   | `audit/logger.js` → `audit/audit.log`      |
+`ott-gateway` gives you all five as composable layers.
 
-Entry: `require('./ott-gateway').dispatchInbound(rawPayload, platform, headers)`.
-Returns `{ outcome, denyReason, latencyMs, message?, identity? }`. Never throws.
+## The 5 layers
 
-## Env knobs
+Every inbound message walks the chain top-to-bottom. Any layer can `deny`.
 
-- `TELEGRAM_BOT_TOKEN` — bot token (outbound; adapter reads for future send()).
-- `TELEGRAM_WEBHOOK_SECRET` — expected value of `x-telegram-bot-api-secret-token`
-  header. If unset → **DEV MODE** (verify bypassed, warn logged).
-- `OTT_IDENTITY_MAP` — JSON map, e.g.
-  `'{"telegram:123456":{"id":"user-alice","roles":["admin"]}}'`.
+1. **caller-validator** — platform policy. Reject bots-talking-to-bots,
+   disallowed chat types, missing fields, suspicious forwards.
+2. **identity-resolver** — map platform principal (e.g. `telegram:user_id`)
+   to your internal identity + role. Unknown principal → deny.
+3. **rate-limit** — token bucket per resolved identity (not per chat),
+   so one user can't burn quota by switching groups.
+4. **audit** — structured log of `{ts, platform, principal, identity, decision, reason}`
+   for every message, accept or deny. Pluggable sink.
+5. **forward** — only here does your handler see the message, with
+   resolved identity attached.
 
-## Wiring into legacy code — NOT done yet (Phase 2)
+Default at every layer is **deny**. You allowlist explicitly.
 
-Legacy inbound handler `src/app/llm/telegram-bot.js` still runs as-is. Per rule 07
-migration path, Phase 1 (this skeleton) is intentionally parallel. Phase 2 will
-migrate handlers one command at a time; Phase 3 enforces grep to ban SDK imports
-outside `ott-gateway/adapters/`.
-
-## Sanity check (pre-commit)
+## Install
 
 ```bash
-grep -rn "node-telegram-bot-api\|@slack/bolt\|@microsoft/teams" . \
-  --include="*.js" \
-  --exclude-dir=ott-gateway/adapters \
-  --exclude-dir=node_modules
+npm install @acegalaxy/ott-gateway
 ```
 
-Must be empty once Phase 3 lands.
+## Quick start (Telegram)
+
+```js
+import { createGateway } from '@acegalaxy/ott-gateway';
+
+const gateway = createGateway({
+  platform: 'telegram',
+  identityMap: async (principal) => {
+    // your DB lookup; return null to deny
+    return await db.users.findByTelegramId(principal.userId);
+  },
+  rateLimit: { perMinute: 30 },
+  auditSink: async (record) => log.info(record),
+  handler: async (msg, identity) => {
+    // only reaches here if all 5 layers passed
+    await myBot.dispatch(msg, identity);
+  },
+});
+
+telegramBot.on('message', (msg) => gateway.ingest(msg));
+```
+
+## vs raw bot framework
+
+| | raw `node-telegram-bot-api` | `ott-gateway` |
+|---|---|---|
+| who can talk to bot | anyone in any chat | allowlisted identities only |
+| rate limit | none (or per-chat) | per-identity, cross-chat |
+| audit trail | you write it | built-in, structured |
+| identity in handler | raw `user_id` | resolved internal user + role |
+| add WhatsApp later | rewrite handlers | swap adapter, keep chain |
+
+## Status
+
+`0.1.x` — API may shift. Used in production internally at ACE Galaxy across
+multiple bots. Telegram adapter ships; WhatsApp/WeChat adapters in progress.
+
+## License
+
+MIT (c) 2026 ACE Galaxy. See [LICENSE](LICENSE).
+
+Security issues -> [SECURITY.md](SECURITY.md).
+Contributions -> [CONTRIBUTING.md](CONTRIBUTING.md).
