@@ -1,11 +1,11 @@
-// telegram-inbound — minimal example for @acegalaxy/ott-gateway
+// telegram-inbound — minimal example for @kanelr/ott-gateway
 //
 // Setup:
 //   npm install
 //   npm run build
 //   node examples/telegram-inbound.js
 
-const { dispatchInbound } = require("@acegalaxy/ott-gateway");
+const { dispatchInbound } = require("@kanelr/ott-gateway");
 
 // In your Telegram webhook handler:
 async function onTelegramUpdate(update) {

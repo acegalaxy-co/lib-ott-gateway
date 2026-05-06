@@ -1,6 +1,6 @@
 "use strict";
 
-const { createSlidingWindow } = require("@acegalaxy/security-utils/rate-limit");
+const { createSlidingWindow } = require("@kanelr/security-utils/rate-limit");
 
 const WINDOW_MS: number = 60 * 1000;
 const MAX_REQUESTS: number = 30;

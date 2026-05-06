@@ -19,7 +19,7 @@ labels: bug
 
 ## Environment
 
-- `@acegalaxy/ott-gateway` version:
+- `@kanelr/ott-gateway` version:
 - Node version:
 - Platform adapter (telegram / whatsapp / wechat / custom):
 - OS:

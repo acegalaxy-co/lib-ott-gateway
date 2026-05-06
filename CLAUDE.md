@@ -1,4 +1,4 @@
-# @acegalaxy/ott-gateway
+# @kanelr/ott-gateway
 
 > **NPM commons library** — Cross-project inbound OTT gateway: 5-layer default-deny (telegram/whatsapp/teams/slack) with platform policy + audit log + rate limit + identity resolution.
 > Cross-cutting rules: see framework `../../rules/00-index.md`.
