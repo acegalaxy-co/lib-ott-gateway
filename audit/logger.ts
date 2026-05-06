@@ -1,7 +1,7 @@
 "use strict";
 
 import path = require("path");
-const { createAuditLogger } = require("@acegalaxy-co/security-utils/audit-log");
+const { createAuditLogger } = require("@acegalaxy/security-utils/audit-log");
 
 const logger = createAuditLogger({
   logPath: path.join(__dirname, "audit.log"),
