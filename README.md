@@ -1,7 +1,7 @@
-# @kanelr/ott-gateway
+# @acegalaxy/ott-gateway
 
-[![npm version](https://img.shields.io/npm/v/@acegalaxy%2Fott-gateway.svg)](https://www.npmjs.com/package/@kanelr/ott-gateway)
-[![npm downloads](https://img.shields.io/npm/dm/@acegalaxy%2Fott-gateway.svg)](https://www.npmjs.com/package/@kanelr/ott-gateway)
+[![npm version](https://img.shields.io/npm/v/@acegalaxy%2Fott-gateway.svg)](https://www.npmjs.com/package/@acegalaxy/ott-gateway)
+[![npm downloads](https://img.shields.io/npm/dm/@acegalaxy%2Fott-gateway.svg)](https://www.npmjs.com/package/@acegalaxy/ott-gateway)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node](https://img.shields.io/node/v/@acegalaxy%2Fott-gateway.svg)](https://nodejs.org)
 
@@ -47,13 +47,13 @@ Default at every layer is **deny**. You allowlist explicitly.
 ## Install
 
 ```bash
-npm install @kanelr/ott-gateway
+npm install @acegalaxy/ott-gateway
 ```
 
 ## Quick start (Telegram)
 
 ```js
-import { createGateway } from '@kanelr/ott-gateway';
+import { createGateway } from '@acegalaxy/ott-gateway';
 
 const gateway = createGateway({
   platform: 'telegram',

@@ -1,6 +1,6 @@
 "use strict";
 
-const { createReplayGuard } = require("@kanelr/security-utils/rate-limit");
+const { createReplayGuard } = require("@acegalaxy/security-utils/rate-limit");
 
 const TTL_MS: number = 60 * 60 * 1000;
 

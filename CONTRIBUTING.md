@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for your interest in `@kanelr/ott-gateway`.
+Thanks for your interest in `@acegalaxy/ott-gateway`.
 
 ## Dev setup
 

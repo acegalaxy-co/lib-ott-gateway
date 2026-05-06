@@ -1,6 +1,6 @@
 {
-  "name": "@kanelr/ott-gateway",
-  "version": "0.1.0",
+  "name": "@acegalaxy/ott-gateway",
+  "version": "0.1.2",
   "description": "Inbound message security gateway for bots — 5-layer default-deny (caller-validator, identity-resolver, rate-limit, audit, forward) for Telegram/WhatsApp/WeChat and other OTT platforms.",
   "main": "dist/index.js",
   "scripts": {
@@ -37,7 +37,7 @@
   },
   "homepage": "https://github.com/acegalaxy-co/ace_commons-ott-gateway-nodejs#readme",
   "dependencies": {
-    "@kanelr/security-utils": "file:../ace_commons-security-utils-nodejs"
+    "@acegalaxy/security-utils": "file:../ace_commons-security-utils-nodejs"
   },
   "types": "dist/index.d.ts",
   "exports": {
@@ -48,7 +48,8 @@
     "./*": {
       "types": "./dist/*.d.ts",
       "default": "./dist/*.js"
-    }
+    },
+    "./package.json": "./package.json"
   },
   "files": [
     "dist",
