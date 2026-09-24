@@ -2,7 +2,7 @@
 
 Snapshot 2026-09-24. Research dựa trên git history của repo này (bao gồm giai
 đoạn còn nằm trong monorepo Nexus dưới tên khác), code gốc `commons/ott-gateway`
-trong `ace_ace_nexus-one_nodejs`, rule/memory nội bộ liên quan, và một ít
+trong Nexus, rule/memory nội bộ liên quan, và một ít
 prior-art web cho phần webhook verification + default-deny. Các fact dưới đây
 là snapshot tại thời điểm viết — code/quyết định có thể đã đổi tiếp sau.
 
@@ -22,9 +22,9 @@ là snapshot tại thời điểm viết — code/quyết định có thể đã
   support qua Telegram `getChatMember` API)". Tiếp theo `fe21ae8 feat: Phase A
   foundation — rules + CLI pointers + LICENSE + CHANGELOG + README`, rồi
   `9f1bfb7 merge: dev → main (Phase A foundation)`. Repo cũ định danh publish
-  qua GitLab Package Registry nội bộ (`git.imba.co`, project 1228) — khác hẳn
+  qua GitLab Package Registry nội bộ (self-hosted) — khác hẳn
   chiến lược git-dependency GitHub hiện tại.
-- `ace_ace_nexus-one_nodejs/commons/ott-gateway`: `git log -- commons/ott-gateway`
+- Nexus `commons/ott-gateway`: `git log -- commons/ott-gateway`
   chỉ còn 1 commit `785aff46 chore: squash history (force-snapshot)` — lịch sử
   chi tiết trước đó đã bị squash ở tầng Nexus, không phục hồi được từ đây;
   README Nexus (`README.md:249`) liệt `ott-gateway/` trong cây `commons/` là
