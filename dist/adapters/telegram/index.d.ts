@@ -6,6 +6,7 @@ declare const _default: {
     splitByNewline: any;
     resolveTelegramConfig: any;
     createTelegramRegistry: any;
+    createPolicyPipeline: any;
 };
 export = _default;
 //# sourceMappingURL=index.d.ts.map

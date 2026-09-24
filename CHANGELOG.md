@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-09-24
+
+### Added
+- `createPolicyPipeline(cfg)` (`adapters/telegram/policy.ts`) — outbound policy
+  pipeline for `sendText()`/`sendMessage()`. Runs `cfg.policies` (array of
+  `OutboundPolicy { name, mode, evaluate(text, ctx) }`) in order; per-policy
+  `mode` (`"off" | "shadow" | "enforce"`) is re-read on every `evaluate()` call
+  (may be a getter) so apps can flip it via env without recreating the client.
+  `"off"` skips the policy; `"shadow"` evaluates and reports via
+  `cfg.onShadowResult` but never applies the result; `"enforce"` applies it:
+  `allow` continues to the next policy, `transform` rewrites `text`/`chatId`
+  for the rest of the chain, `deny` stops the chain, calls `cfg.onDeny`, and
+  returns a blocked verdict. A policy that throws is fail-open by default
+  (logged, treated as allow) or fail-closed with `cfg.onError: "fail-closed"`
+  (denied with reason `policy-error:<name>`). `onShadowResult`/`onDeny`
+  errors are swallowed. Re-exported from `adapters/telegram/index.ts`.
+- `createTelegramClient({ policy })` — optional `PolicyPipelineConfig` wired
+  into `sendText()`/`sendMessage()`. `sendText()` evaluates the policy
+  **exactly once**, on the full `beforeSend`-tagged text, BEFORE splitting
+  into chunks; `sendMessage()` evaluates once on its own text. A blocked
+  verdict returns `{ ok: false, blocked: true, reason, policy }` (no throw,
+  no send) instead of the raw Telegram response. `call()` and every other
+  client method never go through the pipeline. Omitting `policy` keeps
+  behavior byte-identical to 0.4.0. `beforeSend` keeps working unchanged and
+  still runs before the pipeline sees the text.
+- `createTelegramRegistry()` defs now also forward `beforeSend` and `policy`
+  to the client they create (previously only token/apiBase/maxLen/etc. were
+  forwarded).
+
 ## [0.4.0] - 2026-09-24
 
 ### Added

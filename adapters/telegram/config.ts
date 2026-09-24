@@ -23,6 +23,14 @@ interface TelegramClientConfig {
    * belong here — keep that in the calling app, this lib stays generic.
    */
   beforeSend?: (text: string, chatId: string | number) => string;
+  /**
+   * Optional outbound policy pipeline (see policy.ts) — evaluated exactly
+   * once per sendText()/sendMessage() call (sendText: on the full,
+   * beforeSend-tagged text, BEFORE splitting into chunks). beforeSend
+   * always runs first; the pipeline sees its output. Omitted → byte-identical
+   * behavior to no policy at all.
+   */
+  policy?: Parameters<typeof import("./policy").createPolicyPipeline>[0];
 }
 
 function numEnv(name: string): number | undefined {
@@ -39,9 +47,9 @@ function numEnv(name: string): number | undefined {
  * module-load time, so tests can freely mutate process.env between runs.
  */
 function resolveTelegramConfig(partial: TelegramClientConfig = {}): Required<
-  Omit<TelegramClientConfig, "token" | "limiter" | "beforeSend">
+  Omit<TelegramClientConfig, "token" | "limiter" | "beforeSend" | "policy">
 > &
-  Pick<TelegramClientConfig, "token" | "limiter" | "beforeSend"> {
+  Pick<TelegramClientConfig, "token" | "limiter" | "beforeSend" | "policy"> {
   return {
     // partial.token may be a getter function — always truthy, so it wins
     // over the TELEGRAM_BOT_TOKEN env fallback same as a plain string would.
@@ -52,6 +60,7 @@ function resolveTelegramConfig(partial: TelegramClientConfig = {}): Required<
     requestTimeoutMs: partial.requestTimeoutMs ?? numEnv("TELEGRAM_REQUEST_TIMEOUT_MS") ?? 15000,
     limiter: partial.limiter,
     beforeSend: partial.beforeSend,
+    policy: partial.policy,
   };
 }
 

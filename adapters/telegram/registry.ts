@@ -19,6 +19,8 @@ interface TelegramRegistryDef {
   requestTimeoutMs?: number;
   limiter?: RateLimiterLike;
   rate?: RateOptions;
+  beforeSend?: (text: string, chatId: string | number) => string;
+  policy?: Parameters<typeof import("./policy").createPolicyPipeline>[0];
 }
 
 /**
@@ -48,6 +50,8 @@ function createTelegramRegistry(defs: Record<string, TelegramRegistryDef>) {
       maxRetry429: def.maxRetry429,
       requestTimeoutMs: def.requestTimeoutMs,
       limiter,
+      beforeSend: def.beforeSend,
+      policy: def.policy,
     });
     cache.set(key, client);
     return client;

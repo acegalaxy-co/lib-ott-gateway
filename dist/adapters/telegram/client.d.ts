@@ -17,16 +17,19 @@ interface TelegramClientConfigInput {
         acquireSlot(chatId: string | number): Promise<void>;
     };
     beforeSend?: (text: string, chatId: string | number) => string;
+    policy?: Parameters<typeof import("./policy").createPolicyPipeline>[0];
 }
 interface SendTextOptions {
     extra?: Record<string, unknown>;
     streamLines?: number;
+    meta?: Record<string, unknown>;
 }
 declare function createTelegramClient(cfgInput?: TelegramClientConfigInput): {
-    sendMessage: ({ chatId, text, extra, }: {
+    sendMessage: ({ chatId, text, extra, meta, }: {
         chatId: string | number;
         text: string;
         extra?: Record<string, unknown>;
+        meta?: Record<string, unknown>;
     }) => Promise<unknown>;
     sendText: (text: string, chatId: string | number, options?: SendTextOptions) => Promise<unknown>;
     call: (method: string, body?: Record<string, unknown>, opts?: {

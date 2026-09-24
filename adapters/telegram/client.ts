@@ -1,6 +1,7 @@
 "use strict";
 const { resolveTelegramConfig } = require("./config");
 const { createTelegramRateLimiter, sendMessageWithRetry } = require("./rate");
+const { createPolicyPipeline } = require("./policy");
 
 /**
  * Splits text into chunks by newlines, attempting to keep Markdown blocks intact.
@@ -60,16 +61,21 @@ interface TelegramClientConfigInput {
   requestTimeoutMs?: number;
   limiter?: { acquireSlot(chatId: string | number): Promise<void> };
   beforeSend?: (text: string, chatId: string | number) => string;
+  policy?: Parameters<typeof import("./policy").createPolicyPipeline>[0];
 }
 
 interface SendTextOptions {
   extra?: Record<string, unknown>;
   streamLines?: number;
+  meta?: Record<string, unknown>;
 }
 
 function createTelegramClient(cfgInput: TelegramClientConfigInput = {}) {
   const cfg = resolveTelegramConfig(cfgInput);
   const limiter = cfg.limiter || createTelegramRateLimiter();
+  // No `policy` configured → undefined, so sendText()/sendMessage() below
+  // skip the pipeline entirely and stay byte-identical to pre-policy behavior.
+  const policyPipeline = cfg.policy ? createPolicyPipeline(cfg.policy) : undefined;
 
   // Token resolved at EVERY call (not cached at client creation) — cfg.token
   // may be a getter (e.g. () => process.env.X) so callers can rotate/lazily
@@ -103,7 +109,12 @@ function createTelegramClient(cfgInput: TelegramClientConfigInput = {}) {
     return resp.json().catch(() => ({}));
   }
 
-  async function sendMessage({
+  // Raw send — actually hits the Telegram API. Used internally by both
+  // sendMessage() (after its own policy check below) and sendText()'s
+  // per-chunk loop (which bypasses sendMessage() on purpose — the whole
+  // text was already evaluated ONCE before splitting; re-evaluating each
+  // chunk here would evaluate the policy more than once per call).
+  async function rawSendMessage({
     chatId,
     text,
     extra = {},
@@ -125,6 +136,26 @@ function createTelegramClient(cfgInput: TelegramClientConfigInput = {}) {
     });
   }
 
+  async function sendMessage({
+    chatId,
+    text,
+    extra = {},
+    meta,
+  }: {
+    chatId: string | number;
+    text: string;
+    extra?: Record<string, unknown>;
+    meta?: Record<string, unknown>;
+  }): Promise<unknown> {
+    if (policyPipeline) {
+      const verdict = await policyPipeline.evaluate(text, { chatId, method: "sendMessage", extra, meta });
+      if (!verdict.ok) return { ok: false, blocked: true, reason: verdict.reason, policy: verdict.policy };
+      text = verdict.text;
+      chatId = verdict.chatId;
+    }
+    return rawSendMessage({ chatId, text, extra });
+  }
+
   /**
    * Sends a message to Telegram, automatically splitting it into chunks if it exceeds the character limit.
    * @param text - Message text
@@ -137,9 +168,26 @@ function createTelegramClient(cfgInput: TelegramClientConfigInput = {}) {
   async function sendText(text: string, chatId: string | number, options: SendTextOptions = {}): Promise<unknown> {
     const streamLines = options.streamLines && options.streamLines > 0 ? options.streamLines : undefined;
     // Optional consumer hook (e.g. env/project prefix) — applied to the full
-    // text BEFORE splitting so a prefix never lands mid-chunk.
+    // text BEFORE splitting so a prefix never lands mid-chunk. Runs BEFORE
+    // the policy pipeline, so the pipeline sees the already-tagged text.
     const taggedText = cfg.beforeSend ? cfg.beforeSend(text, chatId) : text;
-    const chunks = splitByNewline(taggedText, cfg.maxLen, streamLines);
+
+    let finalText = taggedText;
+    let finalChatId = chatId;
+    if (policyPipeline) {
+      // Evaluated ONCE on the full text, before splitting — see rawSendMessage.
+      const verdict = await policyPipeline.evaluate(taggedText, {
+        chatId,
+        method: "sendText",
+        extra: options.extra,
+        meta: options.meta,
+      });
+      if (!verdict.ok) return { ok: false, blocked: true, reason: verdict.reason, policy: verdict.policy };
+      finalText = verdict.text;
+      finalChatId = verdict.chatId;
+    }
+
+    const chunks = splitByNewline(finalText, cfg.maxLen, streamLines);
     const extra = options.extra || {};
     let lastJson: unknown;
 
@@ -147,7 +195,7 @@ function createTelegramClient(cfgInput: TelegramClientConfigInput = {}) {
       // Default: plain text. Caller opts in parse_mode via extra.
       const sendExtra: Record<string, unknown> = { ...extra };
       if (!sendExtra.parse_mode) delete sendExtra.parse_mode;
-      lastJson = await sendMessage({ chatId, text: chunk, extra: sendExtra });
+      lastJson = await rawSendMessage({ chatId: finalChatId, text: chunk, extra: sendExtra });
     }
 
     if (chunks.length > 1) {

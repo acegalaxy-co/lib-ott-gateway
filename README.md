@@ -101,6 +101,7 @@ const bot = createTelegramClient({
   // token: "...",                    // overrides TELEGRAM_BOT_TOKEN
   // token: () => getRotatedToken(),  // or a getter — resolved on EVERY call, not cached
   // beforeSend: (text, chatId) => `[MyApp] ${text}`, // optional prefix/transform hook
+  // policy: { policies: [...] },     // optional outbound policy pipeline — see "Outbound policy pipeline" below
 });
 
 await bot.sendText("hello world", chatId);       // auto-splits on maxLen, honors 429 retry_after
@@ -143,7 +144,53 @@ bots.get("ghost");    // throws "unknown telegram bot: ghost"
 
 Each key gets its own rate limiter (`createTelegramRateLimiter(def.rate)`) unless
 `def.limiter` is given explicitly — bots that share a token should register under
-the same key so they share one client/limiter.
+the same key so they share one client/limiter. Registry defs also forward
+`beforeSend` and `policy` to the client they create.
+
+### Outbound policy pipeline
+
+`createPolicyPipeline()` lets you gate outbound sends behind whitelist/authz/rate
+policies without the client itself knowing any business logic — consumer apps
+supply the policies, this lib just runs them in order and applies the verdict:
+
+```js
+const { createTelegramClient, createPolicyPipeline } = require("@acegalaxy/lib-ott-gateway/adapters/telegram");
+
+const whitelistPolicy = {
+  name: "whitelist",
+  get mode() { return process.env.MYAPP_POLICY_MODE || "shadow"; }, // "off" | "shadow" | "enforce", re-read every call
+  async evaluate(text, ctx) {
+    // ctx: { chatId, method: "sendText" | "sendMessage", extra, meta }
+    const allowed = await isAllowedDestination(ctx.chatId);
+    return allowed ? { action: "allow" } : { action: "deny", reason: "not-whitelisted" };
+    // or: { action: "transform", text: "...", chatId: "..." } to rewrite before the next policy
+  },
+};
+
+const bot = createTelegramClient({
+  policy: {
+    policies: [whitelistPolicy],
+    onShadowResult: (ev) => console.log("would have", ev.result.action, ev), // shadow mode only — never applied
+    onDeny: (ev) => console.warn("blocked:", ev.policy, ev.reason, ev.chatId),
+    onError: "fail-open", // default; "fail-closed" denies with reason policy-error:<name> instead
+  },
+});
+
+const result = await bot.sendText("hello", chatId);
+if (result && result.blocked) {
+  // { ok: false, blocked: true, reason: "not-whitelisted", policy: "whitelist" } — no fetch was made
+}
+```
+
+Semantics: policies run in array order; `"off"` skips a policy; `"shadow"` evaluates
+and reports via `onShadowResult` but never applies the result or blocks the send;
+`"enforce"` applies `allow` (next policy) / `transform` (rewrites `text`/`chatId` for
+the rest of the chain) / `deny` (stops the chain, calls `onDeny`, returns a blocked
+verdict). `sendText()` evaluates the pipeline **exactly once**, on the full
+`beforeSend`-tagged text, before it is split into chunks — not once per chunk.
+`sendMessage()` evaluates once on its own text. `call()` and every other client
+method never go through the pipeline. No `policy` configured → behavior is
+byte-identical to a client without one.
 
 ## Layout
 
@@ -157,6 +204,7 @@ lib-ott-gateway/
 │       ├── inbound.ts       L1 — Telegram webhook verify + parse (TelegramAdapter)
 │       ├── client.ts        Outbound — createTelegramClient (send/edit/delete/...)
 │       ├── registry.ts      Outbound — createTelegramRegistry (lazy, cached, per-bot-key)
+│       ├── policy.ts        Outbound — createPolicyPipeline (off/shadow/enforce policy chain)
 │       ├── rate.ts          Outbound — token-bucket limiter + 429-retry sendMessageWithRetry
 │       ├── config.ts        Outbound — resolveTelegramConfig (opts > env, lazy)
 │       └── index.ts         Re-exports all of the above
@@ -176,6 +224,10 @@ MIT (c) 2026 ACE Galaxy.
 
 ## Changelog
 
+- **0.5.0** — `createPolicyPipeline()` outbound policy pipeline (off/shadow/enforce);
+  `createTelegramClient({ policy })` wires it into `sendText()`/`sendMessage()`, evaluated
+  exactly once per call; registry defs now forward `beforeSend` and `policy` too. See
+  "Outbound policy pipeline" above.
 - **0.4.0** — `createTelegramRegistry()` for multi-bot apps; `createTelegramClient({ token })`
   now also accepts a token getter function (resolved on every call); `client.call()` accepts
   `opts.signal`; added `client.getChat()`. See "Multi-bot registry" above.

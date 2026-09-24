@@ -20,6 +20,14 @@ interface TelegramClientConfig {
      * belong here — keep that in the calling app, this lib stays generic.
      */
     beforeSend?: (text: string, chatId: string | number) => string;
+    /**
+     * Optional outbound policy pipeline (see policy.ts) — evaluated exactly
+     * once per sendText()/sendMessage() call (sendText: on the full,
+     * beforeSend-tagged text, BEFORE splitting into chunks). beforeSend
+     * always runs first; the pipeline sees its output. Omitted → byte-identical
+     * behavior to no policy at all.
+     */
+    policy?: Parameters<typeof import("./policy").createPolicyPipeline>[0];
 }
 /**
  * Resolve a TelegramClientConfig, filling in defaults. Options passed in
@@ -27,7 +35,7 @@ interface TelegramClientConfig {
  * call time (i.e. when createTelegramClient() is invoked) — never at
  * module-load time, so tests can freely mutate process.env between runs.
  */
-declare function resolveTelegramConfig(partial?: TelegramClientConfig): Required<Omit<TelegramClientConfig, "token" | "limiter" | "beforeSend">> & Pick<TelegramClientConfig, "token" | "limiter" | "beforeSend">;
+declare function resolveTelegramConfig(partial?: TelegramClientConfig): Required<Omit<TelegramClientConfig, "token" | "limiter" | "beforeSend" | "policy">> & Pick<TelegramClientConfig, "token" | "limiter" | "beforeSend" | "policy">;
 declare const _default: {
     resolveTelegramConfig: typeof resolveTelegramConfig;
 };
