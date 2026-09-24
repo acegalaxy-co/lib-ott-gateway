@@ -14,6 +14,8 @@ interface TelegramRegistryDef {
     requestTimeoutMs?: number;
     limiter?: RateLimiterLike;
     rate?: RateOptions;
+    beforeSend?: (text: string, chatId: string | number) => string;
+    policy?: Parameters<typeof import("./policy").createPolicyPipeline>[0];
 }
 /**
  * Create a registry of lazily-instantiated, cached Telegram clients keyed by

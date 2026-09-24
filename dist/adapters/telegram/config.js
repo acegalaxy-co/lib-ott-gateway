@@ -23,6 +23,7 @@ function resolveTelegramConfig(partial = {}) {
         requestTimeoutMs: partial.requestTimeoutMs ?? numEnv("TELEGRAM_REQUEST_TIMEOUT_MS") ?? 15000,
         limiter: partial.limiter,
         beforeSend: partial.beforeSend,
+        policy: partial.policy,
     };
 }
 module.exports = { resolveTelegramConfig };

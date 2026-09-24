@@ -27,6 +27,8 @@ function createTelegramRegistry(defs) {
             maxRetry429: def.maxRetry429,
             requestTimeoutMs: def.requestTimeoutMs,
             limiter,
+            beforeSend: def.beforeSend,
+            policy: def.policy,
         });
         cache.set(key, client);
         return client;

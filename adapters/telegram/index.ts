@@ -4,6 +4,7 @@ const { createTelegramClient, splitByNewline } = require("./client");
 const { createTelegramRateLimiter, sendMessageWithRetry } = require("./rate");
 const { resolveTelegramConfig } = require("./config");
 const { createTelegramRegistry } = require("./registry");
+const { createPolicyPipeline } = require("./policy");
 
 export = {
   TelegramAdapter,
@@ -13,4 +14,5 @@ export = {
   splitByNewline,
   resolveTelegramConfig,
   createTelegramRegistry,
+  createPolicyPipeline,
 };
