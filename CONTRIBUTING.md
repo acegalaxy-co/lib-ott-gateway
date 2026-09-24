@@ -1,12 +1,12 @@
 # Contributing
 
-Thanks for your interest in `@acegalaxy/ott-gateway`.
+Thanks for your interest in `@acegalaxy/lib-ott-gateway`.
 
 ## Dev setup
 
 ```bash
-git clone https://github.com/acegalaxy-co/ace_commons-ott-gateway-nodejs.git
-cd ace_commons-ott-gateway-nodejs
+git clone https://github.com/acegalaxy-co/lib-ott-gateway.git
+cd lib-ott-gateway
 npm install
 npm test
 ```
@@ -34,5 +34,5 @@ flag it in the PR description. These get extra review.
 
 ## Reporting bugs
 
-Use [GitHub Issues](https://github.com/acegalaxy-co/ace_commons-ott-gateway-nodejs/issues).
+Use [GitHub Issues](https://github.com/acegalaxy-co/lib-ott-gateway/issues).
 For security issues, see [SECURITY.md](SECURITY.md) — do **not** open a public issue.

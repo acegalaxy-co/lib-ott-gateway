@@ -113,7 +113,9 @@ async function dispatchInbound(
     let msg: ParsedMessage;
     try {
       msg = await adapter.parse(rawPayload);
-    } catch (_e: unknown) {
+    } catch (err: unknown) {
+      // eslint-disable-next-line no-console
+      console.error("[ott-gateway] adapter.parse failed:", err && (err as Error).message);
       outcome.denyReason = "L1_signature";
       return _finalize(outcome, started);
     }

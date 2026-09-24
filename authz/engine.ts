@@ -30,9 +30,11 @@ async function check(
   let policy: Policy | undefined;
   try {
     // Load per-platform policy. require cache is OK — reload = PM2 restart.
-    policy = require(path.join(__dirname, "policies", `${platform}.json`)) as Policy;
+    // OTT_POLICY_DIR overrides the bundled default (dist/authz/policies/ once built).
+    const policyDir = process.env.OTT_POLICY_DIR || path.join(__dirname, "policies");
+    policy = require(path.join(policyDir, `${platform}.json`)) as Policy;
   } catch (_e: unknown) {
-    return { allow: false, reason: `no policy for platform: ${platform}` };
+    return { allow: false, reason: "no policy for platform" };
   }
 
   const cmds = (policy && policy.commands) || {};

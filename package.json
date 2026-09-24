@@ -1,66 +1,40 @@
 {
-  "name": "@acegalaxy/ott-gateway",
-  "version": "0.1.2",
-  "description": "Inbound message security gateway for bots — 5-layer default-deny (caller-validator, identity-resolver, rate-limit, audit, forward) for Telegram/WhatsApp/WeChat and other OTT platforms.",
+  "name": "@acegalaxy/lib-ott-gateway",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Inbound message security gateway for bots — 5-layer default-deny (adapter verify, identity resolver, authz, rate-limit + replay guard, audit) for Telegram and other OTT platforms. Consumed cross-project via git-dependency.",
   "main": "dist/index.js",
-  "scripts": {
-    "test": "node --test test/*.test.js",
-    "build": "tsc",
-    "prepublishOnly": "npm run build",
-    "clean": "rm -rf dist",
-    "pretest": "npm run build"
+  "types": "dist/index.d.ts",
+  "repository": "github:acegalaxy-co/lib-ott-gateway",
+  "exports": {
+    ".": "./dist/index.js",
+    "./types": "./dist/types.js",
+    "./adapters/*": "./dist/adapters/*.js",
+    "./identity/resolver": "./dist/identity/resolver.js",
+    "./authz/engine": "./dist/authz/engine.js",
+    "./rate-limit/*": "./dist/rate-limit/*.js",
+    "./audit/logger": "./dist/audit/logger.js"
   },
-  "keywords": [
-    "ott",
-    "telegram",
-    "whatsapp",
-    "bot",
-    "security",
-    "gateway",
-    "authz"
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
   ],
-  "author": "ACE Galaxy <hello@acegalaxy.co>",
-  "license": "MIT",
-  "private": false,
+  "scripts": {
+    "build": "tsc && npm run copy-assets",
+    "copy-assets": "mkdir -p dist/authz/policies && cp authz/policies/*.json dist/authz/policies/",
+    "clean": "rm -rf dist",
+    "test": "node --import tsx --test test/*.test.js"
+  },
   "engines": {
     "node": ">=20"
   },
-  "publishConfig": {
-    "access": "public"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/acegalaxy-co/ace_commons-ott-gateway-nodejs.git"
-  },
-  "bugs": {
-    "url": "https://github.com/acegalaxy-co/ace_commons-ott-gateway-nodejs/issues"
-  },
-  "homepage": "https://github.com/acegalaxy-co/ace_commons-ott-gateway-nodejs#readme",
   "dependencies": {
-    "@acegalaxy/security-utils": "file:../ace_commons-security-utils-nodejs"
+    "@acegalaxy/lib-security-utils": "github:acegalaxy-co/lib-security-utils#v0.3.0"
   },
-  "types": "dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
-    },
-    "./*": {
-      "types": "./dist/*.d.ts",
-      "default": "./dist/*.js"
-    },
-    "./package.json": "./package.json"
-  },
-  "files": [
-    "dist",
-    "README.md",
-    "LICENSE",
-    "CONTRIBUTING.md",
-    "SECURITY.md",
-    "CHANGELOG.md"
-  ],
   "devDependencies": {
     "typescript": "^5.7.0",
-    "@types/node": "^20.0.0"
+    "@types/node": "^20",
+    "tsx": "^4"
   }
 }
