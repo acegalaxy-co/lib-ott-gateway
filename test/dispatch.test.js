@@ -5,7 +5,12 @@ const os = require("os");
 const path = require("path");
 
 const gatewayPath = path.resolve(__dirname, "../index.ts");
-const adapterPath = path.resolve(__dirname, "../adapters/telegram.ts");
+const adapterPath = path.resolve(__dirname, "../adapters/telegram/inbound.ts");
+// The adapters/telegram/ dir barrel — index.ts re-exports { TelegramAdapter }
+// from inbound.ts. It must be cleared alongside adapterPath on every fresh
+// require, otherwise it keeps a stale binding to the real class instead of
+// picking up a per-test stub installed at adapterPath.
+const adapterIndexPath = path.resolve(__dirname, "../adapters/telegram/index.ts");
 const resolverPath = path.resolve(__dirname, "../identity/resolver.ts");
 const authzPath = path.resolve(__dirname, "../authz/engine.ts");
 const limiterPath = path.resolve(__dirname, "../rate-limit/limiter.ts");
@@ -38,6 +43,7 @@ function clearGatewayModules() {
   for (const modulePath of [
     gatewayPath,
     adapterPath,
+    adapterIndexPath,
     resolverPath,
     authzPath,
     limiterPath,

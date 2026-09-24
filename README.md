@@ -86,8 +86,36 @@ if (result.outcome === "allow") {
 
 ## Outbound
 
-`adapter.send()` intentionally throws — outbound stays on the consuming
-project's own notification layer.
+`adapter.send()` (the `IOTTAdapter` L1 hook used by `dispatchInbound`) intentionally
+throws — inbound dispatch never sends. For actual outbound sending, use the
+Telegram transport client directly:
+
+```js
+const { createTelegramClient } = require("@acegalaxy/lib-ott-gateway/adapters/telegram");
+
+// Token/apiBase/etc are optional — falls back to TELEGRAM_BOT_TOKEN /
+// TELEGRAM_API_BASE / TELEGRAM_MAX_LEN / TELEGRAM_MAX_RETRY_429 /
+// TELEGRAM_REQUEST_TIMEOUT_MS env vars when omitted. Config is resolved lazily,
+// at createTelegramClient() call time — never at module load.
+const bot = createTelegramClient({
+  // token: "...",           // overrides TELEGRAM_BOT_TOKEN
+  // beforeSend: (text, chatId) => `[MyApp] ${text}`, // optional prefix/transform hook
+});
+
+await bot.sendText("hello world", chatId);       // auto-splits on maxLen, honors 429 retry_after
+await bot.sendMessage({ chatId, text: "hi" });    // single call, no splitting
+await bot.editMessageText(chatId, messageId, "edited");
+await bot.deleteMessage(chatId, messageId);
+await bot.getChatMember(chatId, userId);          // + getMe, getUpdates, getFile/downloadFile,
+                                                   //   createChatInviteLink, ban/unbanChatMember,
+                                                   //   answerCallbackQuery, sendChatAction
+```
+
+Outbound throttling: `createTelegramClient()` builds its own
+`createTelegramRateLimiter()` (per-channel + global token bucket) unless you pass
+a shared `limiter`. This client stays generic — whitelist/authz/env-prefix/testMode
+business logic belongs in the consuming app, not here; use `beforeSend` for simple
+text transforms only.
 
 ## Layout
 
@@ -97,7 +125,12 @@ lib-ott-gateway/
 ├── types.ts                 InboundMessage, OutcomeRecord typedefs
 ├── adapters/
 │   ├── adapter-interface.ts IOTTAdapter abstract base
-│   └── telegram.ts          Telegram webhook verify + parse
+│   └── telegram/
+│       ├── inbound.ts       L1 — Telegram webhook verify + parse (TelegramAdapter)
+│       ├── client.ts        Outbound — createTelegramClient (send/edit/delete/...)
+│       ├── rate.ts          Outbound — token-bucket limiter + 429-retry sendMessageWithRetry
+│       ├── config.ts        Outbound — resolveTelegramConfig (opts > env, lazy)
+│       └── index.ts         Re-exports all of the above
 ├── identity/resolver.ts     L2 — static | live | hybrid
 ├── authz/
 │   ├── engine.ts            L3 — role check
@@ -114,6 +147,10 @@ MIT (c) 2026 ACE Galaxy.
 
 ## Changelog
 
+- **0.3.0** — outbound Telegram transport client ported from Nexus
+  `commons/ott-gateway/adapters/telegram/`: `createTelegramClient`,
+  `createTelegramRateLimiter`, `sendMessageWithRetry`; `adapters/telegram.ts` moved to
+  `adapters/telegram/inbound.ts` to share the directory. See "Outbound" above.
 - **0.2.0** — migrated from Nexus `commons/ott-gateway`; renamed `@acegalaxy/ott-gateway` →
   `@acegalaxy/lib-ott-gateway`; private git-dep (no npm publish); shared security primitives
   now consumed from `@acegalaxy/lib-security-utils` instead of an inlined `lib/` copy; audit

@@ -77,4 +77,4 @@ declare const _default: {
     TelegramAdapter: typeof TelegramAdapter;
 };
 export = _default;
-//# sourceMappingURL=telegram.d.ts.map
+//# sourceMappingURL=inbound.d.ts.map

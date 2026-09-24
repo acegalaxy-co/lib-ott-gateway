@@ -2,7 +2,7 @@ const { describe, it, beforeEach, afterEach } = require("node:test");
 const assert = require("node:assert/strict");
 const path = require("path");
 
-const telegramPath = path.resolve(__dirname, "../adapters/telegram.ts");
+const telegramPath = path.resolve(__dirname, "../adapters/telegram/inbound.ts");
 
 function freshTelegramAdapter() {
   delete require.cache[telegramPath];

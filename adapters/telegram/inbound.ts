@@ -1,6 +1,6 @@
 "use strict";
 const crypto = require("crypto");
-const { IOTTAdapter } = require("./adapter-interface");
+const { IOTTAdapter } = require("../adapter-interface");
 
 interface TelegramAdapterOptions {
   token?: string;

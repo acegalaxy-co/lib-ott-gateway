@@ -1,6 +1,6 @@
 "use strict";
 const crypto = require("crypto");
-const { IOTTAdapter } = require("./adapter-interface");
+const { IOTTAdapter } = require("../adapter-interface");
 class TelegramAdapter extends IOTTAdapter {
     token;
     webhookSecret;
@@ -85,4 +85,4 @@ class TelegramAdapter extends IOTTAdapter {
     }
 }
 module.exports = { TelegramAdapter };
-//# sourceMappingURL=telegram.js.map
+//# sourceMappingURL=inbound.js.map
