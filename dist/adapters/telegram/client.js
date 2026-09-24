@@ -50,21 +50,30 @@ function splitByNewline(text, maxLen, maxLines) {
 function createTelegramClient(cfgInput = {}) {
     const cfg = resolveTelegramConfig(cfgInput);
     const limiter = cfg.limiter || createTelegramRateLimiter();
+    // Token resolved at EVERY call (not cached at client creation) — cfg.token
+    // may be a getter (e.g. () => process.env.X) so callers can rotate/lazily
+    // load the token without recreating the client.
+    function resolveToken() {
+        return typeof cfg.token === "function" ? cfg.token() : cfg.token;
+    }
     function requireToken() {
-        if (!cfg.token)
+        const token = resolveToken();
+        if (!token)
             throw new Error("TELEGRAM_BOT_TOKEN not set");
-        return cfg.token;
+        return token;
     }
     function apiUrl(method) {
-        return `${cfg.apiBase}/bot${cfg.token}/${method}`;
+        return `${cfg.apiBase}/bot${requireToken()}/${method}`;
     }
-    async function call(method, body) {
-        requireToken();
-        const resp = await fetch(apiUrl(method), {
+    async function call(method, body, opts = {}) {
+        const fetchOpts = {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body || {}),
-        });
+        };
+        if (opts.signal)
+            fetchOpts.signal = opts.signal;
+        const resp = await fetch(apiUrl(method), fetchOpts);
         return resp.json().catch(() => ({}));
     }
     async function sendMessage({ chatId, text, extra = {}, }) {
@@ -168,6 +177,15 @@ function createTelegramClient(cfgInput = {}) {
         return resp.json();
     }
     /**
+     * Get chat info (read).
+     */
+    async function getChat(chatId) {
+        requireToken();
+        const url = `${apiUrl("getChat")}?chat_id=${encodeURIComponent(String(chatId))}`;
+        const resp = await fetch(url);
+        return resp.json();
+    }
+    /**
      * Get bot's own info (read).
      */
     async function getMe(opts = {}) {
@@ -243,8 +261,7 @@ function createTelegramClient(cfgInput = {}) {
         return resp.json();
     }
     async function downloadFile(filePath, { maxBytes } = {}) {
-        requireToken();
-        const url = `${cfg.apiBase}/file/bot${cfg.token}/${filePath}`;
+        const url = `${cfg.apiBase}/file/bot${requireToken()}/${filePath}`;
         const resp = await fetch(url);
         if (!resp.ok)
             throw new Error(`Telegram download error: ${resp.status}`);
@@ -280,6 +297,7 @@ function createTelegramClient(cfgInput = {}) {
         deleteMessage,
         sendChatAction,
         getChatMember,
+        getChat,
         getMe,
         getUpdates,
         createChatInviteLink,

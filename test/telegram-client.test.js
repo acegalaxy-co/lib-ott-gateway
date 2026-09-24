@@ -222,4 +222,102 @@ describe("ott-gateway Telegram outbound client", () => {
       /Telegram editMessageText error: 400/
     );
   });
+
+  it("accepts a token getter function, resolved on every call (not cached at creation)", async () => {
+    let currentToken = "first-token";
+    const calls = [];
+    globalThis.fetch = async (url) => {
+      calls.push(url);
+      return jsonResponse(200, { ok: true, result: { message_id: calls.length } });
+    };
+    const { createTelegramClient } = freshClientModule();
+    const client = createTelegramClient({
+      token: () => currentToken,
+      apiBase: "https://api.telegram.org",
+      limiter: fakeLimiter(),
+    });
+
+    await client.sendMessage({ chatId: "123", text: "hi" });
+    currentToken = "rotated-token";
+    await client.sendMessage({ chatId: "123", text: "hi again" });
+
+    assert.match(calls[0], /\/botfirst-token\//);
+    assert.match(calls[1], /\/botrotated-token\//);
+  });
+
+  it("a token getter returning undefined throws 'TELEGRAM_BOT_TOKEN not set'", async () => {
+    globalThis.fetch = async () => {
+      throw new Error("fetch should not be called when token getter returns nothing");
+    };
+    const { createTelegramClient } = freshClientModule();
+    const client = createTelegramClient({
+      token: () => undefined,
+      apiBase: "https://api.telegram.org",
+      limiter: fakeLimiter(),
+    });
+
+    await assert.rejects(() => client.sendMessage({ chatId: "123", text: "hi" }), /TELEGRAM_BOT_TOKEN not set/);
+  });
+
+  it("call() posts to the given method and forwards an AbortSignal, returning parsed JSON", async () => {
+    const calls = [];
+    globalThis.fetch = async (url, opts) => {
+      calls.push({ url, opts });
+      return jsonResponse(200, { ok: true, result: { foo: "bar" } });
+    };
+    const { createTelegramClient } = freshClientModule();
+    const client = createTelegramClient({
+      token: "test-token",
+      apiBase: "https://api.telegram.org",
+      limiter: fakeLimiter(),
+    });
+    const controller = new AbortController();
+
+    const result = await client.call("getUpdates", { offset: 1 }, { signal: controller.signal });
+
+    assert.equal(result.result.foo, "bar");
+    assert.match(calls[0].url, /\/bottest-token\/getUpdates$/);
+    assert.equal(calls[0].opts.signal, controller.signal);
+    assert.equal(JSON.parse(calls[0].opts.body).offset, 1);
+  });
+
+  it("call() never throws on a non-ok response — resolves {} when body isn't JSON", async () => {
+    globalThis.fetch = async () => ({
+      ok: false,
+      status: 500,
+      json: async () => {
+        throw new Error("not json");
+      },
+      text: async () => "boom",
+    });
+    const { createTelegramClient } = freshClientModule();
+    const client = createTelegramClient({
+      token: "test-token",
+      apiBase: "https://api.telegram.org",
+      limiter: fakeLimiter(),
+    });
+
+    const result = await client.call("someMethod");
+
+    assert.deepEqual(result, {});
+  });
+
+  it("getChat() GETs the getChat endpoint with an encoded chat_id and returns parsed JSON", async () => {
+    const calls = [];
+    globalThis.fetch = async (url) => {
+      calls.push(url);
+      return jsonResponse(200, { ok: true, result: { id: "-100123", type: "supergroup" } });
+    };
+    const { createTelegramClient } = freshClientModule();
+    const client = createTelegramClient({
+      token: "test-token",
+      apiBase: "https://api.telegram.org",
+      limiter: fakeLimiter(),
+    });
+
+    const result = await client.getChat("-100 123");
+
+    assert.equal(result.result.type, "supergroup");
+    assert.match(calls[0], /\/bottest-token\/getChat\?chat_id=-100%20123$/);
+  });
 });

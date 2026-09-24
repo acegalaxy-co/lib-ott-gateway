@@ -5,7 +5,12 @@ interface RateLimiterLike {
 }
 
 interface TelegramClientConfig {
-  token?: string;
+  /**
+   * Bot token — a plain string, or a getter invoked on every call (e.g.
+   * `() => process.env.MY_BOT_TOKEN`). Using a getter lets a consumer rotate
+   * or lazily load the token without recreating the client.
+   */
+  token?: string | (() => string | undefined);
   apiBase?: string;
   maxLen?: number;
   maxRetry429?: number;
@@ -38,6 +43,8 @@ function resolveTelegramConfig(partial: TelegramClientConfig = {}): Required<
 > &
   Pick<TelegramClientConfig, "token" | "limiter" | "beforeSend"> {
   return {
+    // partial.token may be a getter function — always truthy, so it wins
+    // over the TELEGRAM_BOT_TOKEN env fallback same as a plain string would.
     token: partial.token || process.env.TELEGRAM_BOT_TOKEN || undefined,
     apiBase: partial.apiBase || process.env.TELEGRAM_API_BASE || "https://api.telegram.org",
     maxLen: partial.maxLen ?? numEnv("TELEGRAM_MAX_LEN") ?? 4000,

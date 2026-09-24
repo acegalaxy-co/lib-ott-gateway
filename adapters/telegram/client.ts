@@ -53,7 +53,7 @@ function splitByNewline(text: string, maxLen: number, maxLines?: number): string
 }
 
 interface TelegramClientConfigInput {
-  token?: string;
+  token?: string | (() => string | undefined);
   apiBase?: string;
   maxLen?: number;
   maxRetry429?: number;
@@ -71,22 +71,35 @@ function createTelegramClient(cfgInput: TelegramClientConfigInput = {}) {
   const cfg = resolveTelegramConfig(cfgInput);
   const limiter = cfg.limiter || createTelegramRateLimiter();
 
+  // Token resolved at EVERY call (not cached at client creation) — cfg.token
+  // may be a getter (e.g. () => process.env.X) so callers can rotate/lazily
+  // load the token without recreating the client.
+  function resolveToken(): string | undefined {
+    return typeof cfg.token === "function" ? cfg.token() : cfg.token;
+  }
+
   function requireToken(): string {
-    if (!cfg.token) throw new Error("TELEGRAM_BOT_TOKEN not set");
-    return cfg.token;
+    const token = resolveToken();
+    if (!token) throw new Error("TELEGRAM_BOT_TOKEN not set");
+    return token;
   }
 
   function apiUrl(method: string): string {
-    return `${cfg.apiBase}/bot${cfg.token}/${method}`;
+    return `${cfg.apiBase}/bot${requireToken()}/${method}`;
   }
 
-  async function call(method: string, body?: Record<string, unknown>): Promise<unknown> {
-    requireToken();
-    const resp = await fetch(apiUrl(method), {
+  async function call(
+    method: string,
+    body?: Record<string, unknown>,
+    opts: { signal?: AbortSignal } = {}
+  ): Promise<unknown> {
+    const fetchOpts: RequestInit = {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body || {}),
-    });
+    };
+    if (opts.signal) fetchOpts.signal = opts.signal;
+    const resp = await fetch(apiUrl(method), fetchOpts);
     return resp.json().catch(() => ({}));
   }
 
@@ -211,6 +224,16 @@ function createTelegramClient(cfgInput: TelegramClientConfigInput = {}) {
   }
 
   /**
+   * Get chat info (read).
+   */
+  async function getChat(chatId: string | number): Promise<unknown> {
+    requireToken();
+    const url = `${apiUrl("getChat")}?chat_id=${encodeURIComponent(String(chatId))}`;
+    const resp = await fetch(url);
+    return resp.json();
+  }
+
+  /**
    * Get bot's own info (read).
    */
   async function getMe(opts: { signal?: AbortSignal } = {}): Promise<unknown> {
@@ -292,8 +315,7 @@ function createTelegramClient(cfgInput: TelegramClientConfigInput = {}) {
   }
 
   async function downloadFile(filePath: string, { maxBytes }: { maxBytes?: number } = {}): Promise<Buffer> {
-    requireToken();
-    const url = `${cfg.apiBase}/file/bot${cfg.token}/${filePath}`;
+    const url = `${cfg.apiBase}/file/bot${requireToken()}/${filePath}`;
     const resp = await fetch(url);
     if (!resp.ok) throw new Error(`Telegram download error: ${resp.status}`);
     if (maxBytes) {
@@ -329,6 +351,7 @@ function createTelegramClient(cfgInput: TelegramClientConfigInput = {}) {
     deleteMessage,
     sendChatAction,
     getChatMember,
+    getChat,
     getMe,
     getUpdates,
     createChatInviteLink,

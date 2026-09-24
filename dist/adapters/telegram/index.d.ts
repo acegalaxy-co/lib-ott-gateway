@@ -5,6 +5,7 @@ declare const _default: {
     sendMessageWithRetry: any;
     splitByNewline: any;
     resolveTelegramConfig: any;
+    createTelegramRegistry: any;
 };
 export = _default;
 //# sourceMappingURL=index.d.ts.map

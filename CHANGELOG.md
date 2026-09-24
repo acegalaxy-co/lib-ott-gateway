@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-09-24
+
+### Added
+- `createTelegramRegistry(defs)` (`adapters/telegram/registry.ts`) — a registry of
+  lazily-instantiated, cached `createTelegramClient()` instances keyed by a
+  caller-chosen bot key (e.g. `"kane"`, `"nexus"`). `get(key)` returns the cached
+  client on repeat calls; `has(key)` / `keys()` inspect the registered defs.
+  Each key gets its own `createTelegramRateLimiter(def.rate)` unless `def.limiter`
+  is explicitly given — bots sharing a token must register under the same key to
+  share a limiter. Unknown key → throws `unknown telegram bot: <key>`. Never
+  reads `process.env` — callers pass env-derived values in `defs`. Re-exported
+  from `adapters/telegram/index.ts`.
+- `createTelegramClient({ token })` now also accepts a **token getter**
+  (`() => string | undefined`) in addition to a plain string — resolved on
+  every call (not cached at client creation), so a consumer can rotate or
+  lazily load the token without recreating the client. Plain-string and env
+  fallback (`TELEGRAM_BOT_TOKEN`) behavior is unchanged.
+- `client.call(method, body?, opts?)` now accepts `opts.signal` (`AbortSignal`),
+  forwarded to the underlying `fetch()`.
+- `client.getChat(chatId)` — `GET getChat?chat_id=<id>` (read).
+
 ## [0.3.0] - 2026-09-24
 
 ### Added

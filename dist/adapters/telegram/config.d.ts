@@ -2,7 +2,12 @@ interface RateLimiterLike {
     acquireSlot(chatId: string | number): Promise<void>;
 }
 interface TelegramClientConfig {
-    token?: string;
+    /**
+     * Bot token — a plain string, or a getter invoked on every call (e.g.
+     * `() => process.env.MY_BOT_TOKEN`). Using a getter lets a consumer rotate
+     * or lazily load the token without recreating the client.
+     */
+    token?: string | (() => string | undefined);
     apiBase?: string;
     maxLen?: number;
     maxRetry429?: number;

@@ -14,6 +14,8 @@ function numEnv(name) {
  */
 function resolveTelegramConfig(partial = {}) {
     return {
+        // partial.token may be a getter function — always truthy, so it wins
+        // over the TELEGRAM_BOT_TOKEN env fallback same as a plain string would.
         token: partial.token || process.env.TELEGRAM_BOT_TOKEN || undefined,
         apiBase: partial.apiBase || process.env.TELEGRAM_API_BASE || "https://api.telegram.org",
         maxLen: partial.maxLen ?? numEnv("TELEGRAM_MAX_LEN") ?? 4000,

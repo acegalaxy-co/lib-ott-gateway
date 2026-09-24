@@ -98,7 +98,8 @@ const { createTelegramClient } = require("@acegalaxy/lib-ott-gateway/adapters/te
 // TELEGRAM_REQUEST_TIMEOUT_MS env vars when omitted. Config is resolved lazily,
 // at createTelegramClient() call time — never at module load.
 const bot = createTelegramClient({
-  // token: "...",           // overrides TELEGRAM_BOT_TOKEN
+  // token: "...",                    // overrides TELEGRAM_BOT_TOKEN
+  // token: () => getRotatedToken(),  // or a getter — resolved on EVERY call, not cached
   // beforeSend: (text, chatId) => `[MyApp] ${text}`, // optional prefix/transform hook
 });
 
@@ -106,9 +107,10 @@ await bot.sendText("hello world", chatId);       // auto-splits on maxLen, honor
 await bot.sendMessage({ chatId, text: "hi" });    // single call, no splitting
 await bot.editMessageText(chatId, messageId, "edited");
 await bot.deleteMessage(chatId, messageId);
-await bot.getChatMember(chatId, userId);          // + getMe, getUpdates, getFile/downloadFile,
+await bot.getChatMember(chatId, userId);          // + getChat, getMe, getUpdates, getFile/downloadFile,
                                                    //   createChatInviteLink, ban/unbanChatMember,
                                                    //   answerCallbackQuery, sendChatAction
+await bot.call("someMethod", { foo: "bar" }, { signal: controller.signal }); // raw call, any method
 ```
 
 Outbound throttling: `createTelegramClient()` builds its own
@@ -116,6 +118,32 @@ Outbound throttling: `createTelegramClient()` builds its own
 a shared `limiter`. This client stays generic — whitelist/authz/env-prefix/testMode
 business logic belongs in the consuming app, not here; use `beforeSend` for simple
 text transforms only.
+
+### Multi-bot registry
+
+When an app talks to more than one Telegram bot (e.g. a "kane" ops bot and a
+"nexus" customer bot), use `createTelegramRegistry()` to get one lazily-created,
+cached client per bot key instead of managing `createTelegramClient()` calls by
+hand:
+
+```js
+const { createTelegramRegistry } = require("@acegalaxy/lib-ott-gateway/adapters/telegram");
+
+// Never reads process.env — pass env-derived values in per callers.
+const bots = createTelegramRegistry({
+  kane: { token: () => process.env.KANE_HOOK_BOT_TOKEN },
+  nexus: { token: () => process.env.NEXUS_BOT_TOKEN, rate: { globalIntervalMs: 50 } },
+});
+
+await bots.get("kane").sendText("deploy done", chatId);
+bots.has("nexus");   // true
+bots.keys();          // ["kane", "nexus"]
+bots.get("ghost");    // throws "unknown telegram bot: ghost"
+```
+
+Each key gets its own rate limiter (`createTelegramRateLimiter(def.rate)`) unless
+`def.limiter` is given explicitly — bots that share a token should register under
+the same key so they share one client/limiter.
 
 ## Layout
 
@@ -128,6 +156,7 @@ lib-ott-gateway/
 │   └── telegram/
 │       ├── inbound.ts       L1 — Telegram webhook verify + parse (TelegramAdapter)
 │       ├── client.ts        Outbound — createTelegramClient (send/edit/delete/...)
+│       ├── registry.ts      Outbound — createTelegramRegistry (lazy, cached, per-bot-key)
 │       ├── rate.ts          Outbound — token-bucket limiter + 429-retry sendMessageWithRetry
 │       ├── config.ts        Outbound — resolveTelegramConfig (opts > env, lazy)
 │       └── index.ts         Re-exports all of the above
@@ -147,6 +176,9 @@ MIT (c) 2026 ACE Galaxy.
 
 ## Changelog
 
+- **0.4.0** — `createTelegramRegistry()` for multi-bot apps; `createTelegramClient({ token })`
+  now also accepts a token getter function (resolved on every call); `client.call()` accepts
+  `opts.signal`; added `client.getChat()`. See "Multi-bot registry" above.
 - **0.3.0** — outbound Telegram transport client ported from Nexus
   `commons/ott-gateway/adapters/telegram/`: `createTelegramClient`,
   `createTelegramRateLimiter`, `sendMessageWithRetry`; `adapters/telegram.ts` moved to

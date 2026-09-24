@@ -8,7 +8,7 @@
  */
 declare function splitByNewline(text: string, maxLen: number, maxLines?: number): string[];
 interface TelegramClientConfigInput {
-    token?: string;
+    token?: string | (() => string | undefined);
     apiBase?: string;
     maxLen?: number;
     maxRetry429?: number;
@@ -29,13 +29,16 @@ declare function createTelegramClient(cfgInput?: TelegramClientConfigInput): {
         extra?: Record<string, unknown>;
     }) => Promise<unknown>;
     sendText: (text: string, chatId: string | number, options?: SendTextOptions) => Promise<unknown>;
-    call: (method: string, body?: Record<string, unknown>) => Promise<unknown>;
+    call: (method: string, body?: Record<string, unknown>, opts?: {
+        signal?: AbortSignal;
+    }) => Promise<unknown>;
     editMessageText: (chatId: string | number, messageId: string | number, text: string, opts?: {
         extra?: Record<string, unknown>;
     }) => Promise<unknown>;
     deleteMessage: (chatId: string | number, messageId: string | number) => Promise<unknown>;
     sendChatAction: (chatId: string | number, action: string) => Promise<unknown>;
     getChatMember: (chatId: string | number, userId: string | number) => Promise<unknown>;
+    getChat: (chatId: string | number) => Promise<unknown>;
     getMe: (opts?: {
         signal?: AbortSignal;
     }) => Promise<unknown>;
