@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-01
+
+### Added
+- `service-alert` (`@acegalaxy/lib-ott-gateway/service-alert`) — shared Telegram
+  alert format for background services: `formatServiceAlert()` (header
+  `<icon> [<service>] <title>`, `Host: <HOST_LABEL> · <time VN>`, `key: value`
+  fields, `---` + detail, capped 3500 chars) and best-effort
+  `sendServiceAlert()` (never throws, token redacted). Env:
+  `TELEGRAM_ALERT_BOT_TOKEN`/`NEXUS_TELEGRAM_BOT_TOKEN`,
+  `TELEGRAM_ALERT_CHAT_ID`/`NEXUS_TELEGRAM_CHANNEL_STATUS_ALERT`, `HOST_LABEL`.
+- `service-alert` CLI bin for bash wrappers — detail from stdin, `--field k=v`,
+  `--env-file`; always exits 0.
+
 ## [0.5.0] - 2026-09-24
 
 ### Added

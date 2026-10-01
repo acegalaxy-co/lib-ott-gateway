@@ -192,6 +192,30 @@ verdict). `sendText()` evaluates the pipeline **exactly once**, on the full
 method never go through the pipeline. No `policy` configured → behavior is
 byte-identical to a client without one.
 
+### Service alert (shared format — MUST use for service monitoring)
+
+Background services (pm2 workers, cron wrappers) send status alerts in one
+uniform format:
+
+```
+✅ [<service>] <title>
+Host: <HOST_LABEL> · <YYYY-MM-DD HH:mm, Asia/Ho_Chi_Minh>
+<key>: <value>
+---
+<detail>
+```
+
+```js
+import sa from "@acegalaxy/lib-ott-gateway/service-alert";
+await sa.sendServiceAlert({ service: "my-worker", status: "fail", title: "tick error", fields: { account: "a1" }, detail: err.message });
+```
+
+Bash: `tail -15 out.log | npx service-alert --service my-job --status fail --title "Daily" --field exit=1 --env-file .env`.
+
+Env: `TELEGRAM_ALERT_BOT_TOKEN` (fallback `NEXUS_TELEGRAM_BOT_TOKEN`),
+`TELEGRAM_ALERT_CHAT_ID` (fallback `NEXUS_TELEGRAM_CHANNEL_STATUS_ALERT`),
+`HOST_LABEL`. Missing token/chat → no-op. Never throws; token redacted from errors.
+
 ## Layout
 
 ```

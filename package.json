@@ -1,6 +1,6 @@
 {
   "name": "@acegalaxy/lib-ott-gateway",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "private": true,
   "description": "Inbound message security gateway for bots — 5-layer default-deny (adapter verify, identity resolver, authz, rate-limit + replay guard, audit) for Telegram and other OTT platforms. Consumed cross-project via git-dependency.",
   "main": "dist/index.js",
@@ -15,7 +15,8 @@
     "./identity/resolver": "./dist/identity/resolver.js",
     "./authz/engine": "./dist/authz/engine.js",
     "./rate-limit/*": "./dist/rate-limit/*.js",
-    "./audit/logger": "./dist/audit/logger.js"
+    "./audit/logger": "./dist/audit/logger.js",
+    "./service-alert": "./dist/service-alert.js"
   },
   "files": [
     "dist/",
@@ -38,5 +39,8 @@
     "typescript": "^5.7.0",
     "@types/node": "^20",
     "tsx": "^4"
+  },
+  "bin": {
+    "service-alert": "dist/bin/service-alert.js"
   }
 }
