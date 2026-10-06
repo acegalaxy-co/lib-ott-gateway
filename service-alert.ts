@@ -6,21 +6,22 @@ const { createTelegramRateLimiter, sendMessageWithRetry } = require("./adapters/
  * Every service MUST send status alerts through this module so the channel reads
  * uniformly:
  *
- *   ✅ [<service>] <title>
- *   Host: <host> · <YYYY-MM-DD HH:mm>
+ *   [<Env>][<Project>] [<icon> <status>] Service <service>
+ *   <title>
  *   <key>: <value>
  *   ---
  *   <detail>
  */
 
-type AlertStatus = "ok" | "fail" | "warn" | "info";
+type AlertStatus = "ok" | "fail" | "warn" | "info" | "queued" | "running";
 
 interface ServiceAlert {
   service: string;
   status: AlertStatus;
   title: string;
   host?: string;
-  time?: Date;
+  /** Short project name shown as the 2nd bracket, e.g. "Crawler". Omitted when empty. */
+  project?: string;
   fields?: Record<string, string | number | undefined | null>;
   detail?: string;
 }
@@ -32,19 +33,16 @@ interface SendServiceAlertOptions {
   apiBase?: string;
 }
 
-const ICONS: Record<AlertStatus, string> = { ok: "✅", fail: "❌", warn: "⚠️", info: "ℹ️" };
+const ICONS: Record<AlertStatus, string> = { ok: "✅", fail: "❌", warn: "⚠️", info: "ℹ️", queued: "⏳", running: "🔄" };
 // ponytail: hard cap below Telegram's 4096 limit; long output is truncated, not split.
 const MAX_LEN = 3500;
-const TZ = "Asia/Ho_Chi_Minh";
-
-function formatTime(d: Date): string {
-  // sv-SE locale renders "YYYY-MM-DD HH:mm".
-  return d.toLocaleString("sv-SE", { timeZone: TZ, hour12: false }).slice(0, 16);
-}
 
 function formatServiceAlert(a: ServiceAlert): string {
-  const icon = ICONS[a.status] ?? ICONS.info;
-  const lines = [`${icon} [${a.service}] ${a.title}`, `Host: ${a.host || "Local"} · ${formatTime(a.time ?? new Date())}`];
+  const status: AlertStatus = a.status in ICONS ? a.status : "info";
+  const env = `[${a.host || "Local"}]`;
+  const project = a.project ? `[${a.project}]` : "";
+  const lines = [`${env}${project} [${ICONS[status]} ${status}] Service ${a.service}`];
+  if (a.title) lines.push(a.title);
   for (const [k, v] of Object.entries(a.fields ?? {})) {
     if (v !== undefined && v !== null && v !== "") lines.push(`${k}: ${v}`);
   }
@@ -60,6 +58,7 @@ function resolveAlertTarget(env: Record<string, string | undefined> = process.en
     token: env.TELEGRAM_ALERT_BOT_TOKEN || env.NEXUS_TELEGRAM_BOT_TOKEN || "",
     chatId: env.TELEGRAM_ALERT_CHAT_ID || env.NEXUS_TELEGRAM_CHANNEL_STATUS_ALERT || "",
     host: env.HOST_LABEL || "Local",
+    project: env.ALERT_PROJECT || "",
   };
 }
 
@@ -77,7 +76,7 @@ async function sendServiceAlert(
   const token = opts.token ?? target.token;
   const chatId = opts.chatId ?? target.chatId;
   if (!token || !chatId) return { sent: false, reason: "telegram not configured" };
-  const text = formatServiceAlert({ ...a, host: a.host || target.host });
+  const text = formatServiceAlert({ ...a, host: a.host || target.host, project: a.project || target.project });
   try {
     await sendMessageWithRetry({
       apiBase: opts.apiBase || "https://api.telegram.org",

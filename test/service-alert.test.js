@@ -8,17 +8,22 @@ describe("service-alert", () => {
     globalThis.fetch = originalFetch;
   });
 
-  it("formats header, host line, fields and detail", () => {
+  it("formats [Env][Project] [icon status] Service header, title, fields and detail", () => {
     const text = formatServiceAlert({
       service: "seo-google-daily",
       status: "fail",
       title: "Daily report",
       host: "Mac255",
-      time: new Date("2026-10-01T16:10:00Z"),
+      project: "Crawler",
       fields: { exit: 1, skipped: undefined },
       detail: "line1\nline2",
     });
-    assert.equal(text, "❌ [seo-google-daily] Daily report\nHost: Mac255 · 2026-10-01 23:10\nexit: 1\n---\nline1\nline2");
+    assert.equal(text, "[Mac255][Crawler] [❌ fail] Service seo-google-daily\nDaily report\nexit: 1\n---\nline1\nline2");
+  });
+
+  it("queued status, no project bracket when project empty", () => {
+    const text = formatServiceAlert({ service: "nhadathue-tiktok", status: "queued", title: "", host: "Mac255" });
+    assert.equal(text, "[Mac255] [⏳ queued] Service nhadathue-tiktok");
   });
 
   it("caps long text at 3500 chars", () => {
@@ -42,7 +47,7 @@ describe("service-alert", () => {
     const ok = await sendServiceAlert({ service: "s", status: "ok", title: "t" }, { env });
     assert.equal(ok.sent, true);
     assert.equal(body.chat_id, "chat1");
-    assert.ok(body.text.includes("Host: Mac255"));
+    assert.ok(body.text.startsWith("[Mac255] [✅ ok] Service s"));
 
     globalThis.fetch = async () => {
       throw new Error("connect failed https://api.telegram.org/bottok-secret-1/sendMessage");

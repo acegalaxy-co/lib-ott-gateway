@@ -2,7 +2,7 @@
 "use strict";
 // CLI for bash services/cron wrappers:
 //   tail -15 out.log | service-alert --service seo-google-daily --status fail \
-//     --title "Daily report" --field exit=1 [--env-file .env]
+//     --project Crawler --title "Daily report" --field exit=1 [--env-file .env]
 // Detail is read from stdin (when piped). Exit 0 always — alerting is best-effort.
 const { sendServiceAlert } = require("../service-alert");
 
@@ -32,8 +32,8 @@ async function main() {
   const service = String(args.service || "");
   const title = String(args.title || "");
   const status = String(args.status || "info");
-  if (!service || !title || !["ok", "fail", "warn", "info"].includes(status)) {
-    console.error("usage: service-alert --service <name> --status ok|fail|warn|info --title <text> [--field k=v]... [--env-file path] < detail");
+  if (!service || !title || !["ok", "fail", "warn", "info", "queued", "running"].includes(status)) {
+    console.error("usage: service-alert --service <name> --status ok|fail|warn|info|queued|running [--project <name>] --title <text> [--field k=v]... [--env-file path] < detail");
     return;
   }
   if (args["env-file"]) {
@@ -44,7 +44,7 @@ async function main() {
     }
   }
   const detail = await readStdin();
-  const r = await sendServiceAlert({ service, status, title, fields: args.fields, detail });
+  const r = await sendServiceAlert({ service, status, title, project: args.project ? String(args.project) : undefined, fields: args.fields, detail });
   console.log(r.sent ? "service-alert: sent" : `service-alert: skipped (${r.reason})`);
 }
 

@@ -3,19 +3,20 @@
  * Every service MUST send status alerts through this module so the channel reads
  * uniformly:
  *
- *   ✅ [<service>] <title>
- *   Host: <host> · <YYYY-MM-DD HH:mm>
+ *   [<Env>][<Project>] [<icon> <status>] Service <service>
+ *   <title>
  *   <key>: <value>
  *   ---
  *   <detail>
  */
-type AlertStatus = "ok" | "fail" | "warn" | "info";
+type AlertStatus = "ok" | "fail" | "warn" | "info" | "queued" | "running";
 interface ServiceAlert {
     service: string;
     status: AlertStatus;
     title: string;
     host?: string;
-    time?: Date;
+    /** Short project name shown as the 2nd bracket, e.g. "Crawler". Omitted when empty. */
+    project?: string;
     fields?: Record<string, string | number | undefined | null>;
     detail?: string;
 }
@@ -31,6 +32,7 @@ declare function resolveAlertTarget(env?: Record<string, string | undefined>): {
     token: string;
     chatId: string;
     host: string;
+    project: string;
 };
 /**
  * Best-effort send. Never throws (alerts must not crash a service) and never
