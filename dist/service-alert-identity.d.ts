@@ -4,11 +4,14 @@
  *
  *   project = git-root folder (bds-hue -> BdsHue)   | env ALERT_PROJECT wins
  *   service = nearest package.json folder name      | explicit `service` wins
+ *   names longer than 16 chars are shortened (longest word trimmed first)
  *   store   = $ALERT_STATE_DIR | ~/.config/acegalaxy / service-alert.json
  */
 type Env = Record<string, string | undefined>;
-/** "bds-hue" / "bds_hue" / "bds hue" -> "BdsHue". */
+/** "bds-hue" / "bds_hue" / "bds hue" -> "BdsHue" (shortened when > MAX_NAME). */
 declare function pascal(name: string): string;
+/** "share-fp2group-fb-personal" -> kebab, shortened when > MAX_NAME. */
+declare function kebab(name: string): string;
 declare function suggestProject(cwd: string): {
     key: string;
     name: string;
@@ -53,6 +56,7 @@ declare const _default: {
     suggestProject: typeof suggestProject;
     suggestService: typeof suggestService;
     pascal: typeof pascal;
+    kebab: typeof kebab;
 };
 export = _default;
 //# sourceMappingURL=service-alert-identity.d.ts.map

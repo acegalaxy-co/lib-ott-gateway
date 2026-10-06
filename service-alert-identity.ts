@@ -9,6 +9,7 @@ const path = require("node:path");
  *
  *   project = git-root folder (bds-hue -> BdsHue)   | env ALERT_PROJECT wins
  *   service = nearest package.json folder name      | explicit `service` wins
+ *   names longer than 16 chars are shortened (longest word trimmed first)
  *   store   = $ALERT_STATE_DIR | ~/.config/acegalaxy / service-alert.json
  */
 
@@ -61,13 +62,41 @@ function findUp(start: string, marker: string): string | undefined {
   }
 }
 
-/** "bds-hue" / "bds_hue" / "bds hue" -> "BdsHue". */
+const MAX_NAME = 16;
+const MIN_WORD = 3;
+
+function words(name: string): string[] {
+  return name.split(/[^A-Za-z0-9]+/).filter(Boolean);
+}
+
+/**
+ * Keep a suggested name <= MAX_NAME: trim the longest word one char at a time
+ * (never below MIN_WORD) so short words stay whole and the name stays recognisable.
+ * Best effort — pick a nicer one with `service-alert init`.
+ */
+function shorten(ws: string[], sep: string): string[] {
+  const out = [...ws];
+  const len = () => out.join(sep).length;
+  while (len() > MAX_NAME) {
+    let i = 0;
+    for (let k = 1; k < out.length; k++) if (out[k].length > out[i].length) i = k;
+    if (out[i].length <= MIN_WORD) break;
+    out[i] = out[i].slice(0, -1);
+  }
+  return out;
+}
+
+/** "bds-hue" / "bds_hue" / "bds hue" -> "BdsHue" (shortened when > MAX_NAME). */
 function pascal(name: string): string {
-  return name
-    .split(/[^A-Za-z0-9]+/)
-    .filter(Boolean)
+  return shorten(words(name), "")
     .map((w) => w[0].toUpperCase() + w.slice(1))
     .join("");
+}
+
+/** "share-fp2group-fb-personal" -> kebab, shortened when > MAX_NAME. */
+function kebab(name: string): string {
+  const ws = words(name);
+  return ws.length ? shorten(ws, "-").join("-") : name;
 }
 
 function suggestProject(cwd: string): { key: string; name: string } {
@@ -77,7 +106,7 @@ function suggestProject(cwd: string): { key: string; name: string } {
 
 function suggestService(cwd: string): { key: string; name: string } {
   const dir = findUp(cwd, "package.json") ?? path.resolve(cwd);
-  return { key: dir, name: path.basename(dir) };
+  return { key: dir, name: kebab(path.basename(dir)) };
 }
 
 /**
@@ -143,4 +172,4 @@ function saveIdentity(opts: { cwd?: string; env?: Env; project: string; service:
   return writeStore(file, store);
 }
 
-export = { resolveIdentity, peekIdentity, saveIdentity, suggestProject, suggestService, pascal };
+export = { resolveIdentity, peekIdentity, saveIdentity, suggestProject, suggestService, pascal, kebab };

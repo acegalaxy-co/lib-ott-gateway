@@ -45,13 +45,40 @@ function findUp(start, marker) {
         dir = up;
     }
 }
-/** "bds-hue" / "bds_hue" / "bds hue" -> "BdsHue". */
+const MAX_NAME = 16;
+const MIN_WORD = 3;
+function words(name) {
+    return name.split(/[^A-Za-z0-9]+/).filter(Boolean);
+}
+/**
+ * Keep a suggested name <= MAX_NAME: trim the longest word one char at a time
+ * (never below MIN_WORD) so short words stay whole and the name stays recognisable.
+ * Best effort — pick a nicer one with `service-alert init`.
+ */
+function shorten(ws, sep) {
+    const out = [...ws];
+    const len = () => out.join(sep).length;
+    while (len() > MAX_NAME) {
+        let i = 0;
+        for (let k = 1; k < out.length; k++)
+            if (out[k].length > out[i].length)
+                i = k;
+        if (out[i].length <= MIN_WORD)
+            break;
+        out[i] = out[i].slice(0, -1);
+    }
+    return out;
+}
+/** "bds-hue" / "bds_hue" / "bds hue" -> "BdsHue" (shortened when > MAX_NAME). */
 function pascal(name) {
-    return name
-        .split(/[^A-Za-z0-9]+/)
-        .filter(Boolean)
+    return shorten(words(name), "")
         .map((w) => w[0].toUpperCase() + w.slice(1))
         .join("");
+}
+/** "share-fp2group-fb-personal" -> kebab, shortened when > MAX_NAME. */
+function kebab(name) {
+    const ws = words(name);
+    return ws.length ? shorten(ws, "-").join("-") : name;
 }
 function suggestProject(cwd) {
     const root = findUp(cwd, ".git") ?? path.resolve(cwd);
@@ -59,7 +86,7 @@ function suggestProject(cwd) {
 }
 function suggestService(cwd) {
     const dir = findUp(cwd, "package.json") ?? path.resolve(cwd);
-    return { key: dir, name: path.basename(dir) };
+    return { key: dir, name: kebab(path.basename(dir)) };
 }
 /**
  * Resolve project/service. Explicit values win; otherwise saved value; otherwise
@@ -124,5 +151,5 @@ function saveIdentity(opts) {
     store.services[suggestService(cwd).key] = opts.service;
     return writeStore(file, store);
 }
-module.exports = { resolveIdentity, peekIdentity, saveIdentity, suggestProject, suggestService, pascal };
+module.exports = { resolveIdentity, peekIdentity, saveIdentity, suggestProject, suggestService, pascal, kebab };
 //# sourceMappingURL=service-alert-identity.js.map

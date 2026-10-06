@@ -4,7 +4,7 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 const { formatServiceAlert, sendServiceAlert } = require("../service-alert.ts");
-const { resolveIdentity, pascal } = require("../service-alert-identity.ts");
+const { resolveIdentity, pascal, kebab } = require("../service-alert-identity.ts");
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), "sa-"));
 
@@ -67,7 +67,7 @@ describe("service-alert", () => {
 describe("service-alert identity", () => {
   it("pascal-cases folder names", () => {
     assert.equal(pascal("bds-hue"), "BdsHue");
-    assert.equal(pascal("share_fp2group tiktok"), "ShareFp2groupTiktok");
+    assert.equal(pascal("share_fp2g tiktok"), "ShareFp2gTiktok");
   });
 
   it("suggests project from git root and service from package.json folder, saves, then reuses", () => {
@@ -113,5 +113,21 @@ describe("service-alert init", () => {
     assert.ok(peekIdentity({ cwd, env }).project);
     assert.equal(saveIdentity({ cwd, env, project: "Crawler", service: "tiktok" }), true);
     assert.deepEqual(resolveIdentity({ cwd, env }), { project: "Crawler", service: "tiktok" });
+  });
+});
+
+describe("service-alert name shortening", () => {
+  it("leaves names <= 16 chars untouched", () => {
+    assert.equal(pascal("bds-hue"), "BdsHue");
+    assert.equal(kebab("seo-google-daily"), "seo-google-daily");
+  });
+
+  it("trims longest words first, keeps short words whole, never below 3 chars per word", () => {
+    const k = kebab("share-fp2group-fb-personal");
+    assert.ok(k.length <= 16, k);
+    assert.ok(k.split("-").includes("fb"));
+    assert.ok(k.split("-").every((w) => w.length >= 2));
+    assert.ok(pascal("nhadathue-realestate-crawler-platform").length <= 16);
+    assert.equal(kebab("a-b-c-d-e-f-g-h-i-j-k-l-m-n-o-p-q-r"), "a-b-c-d-e-f-g-h-i-j-k-l-m-n-o-p-q-r");
   });
 });
