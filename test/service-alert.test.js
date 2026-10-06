@@ -74,8 +74,10 @@ describe("service-alert identity", () => {
     const state = tmp();
     const root = tmp();
     const repo = path.join(root, "my-repo");
-    const svc = path.join(repo, "services", "nhadathue-tiktok");
+    const svc = path.join(repo, "src", "services", "nhadathue-tiktok");
     fs.mkdirSync(path.join(repo, ".git"), { recursive: true });
+    fs.writeFileSync(path.join(repo, ".git", "HEAD"), "ref: refs/heads/main");
+    fs.mkdirSync(path.join(repo, "src", ".git", "hooks"), { recursive: true }); // stray .git dir must be ignored
     fs.mkdirSync(svc, { recursive: true });
     fs.writeFileSync(path.join(svc, "package.json"), "{}");
     const env = { ALERT_STATE_DIR: state };

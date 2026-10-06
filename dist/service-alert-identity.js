@@ -24,10 +24,20 @@ function writeStore(file, s) {
         return false;
     }
 }
+// A real git root: `.git` is a file (worktree/submodule) or a dir holding HEAD — stray empty `.git/` dirs don't count.
+function isGitRoot(dir) {
+    const g = path.join(dir, ".git");
+    try {
+        return fs.statSync(g).isFile() || fs.existsSync(path.join(g, "HEAD"));
+    }
+    catch {
+        return false;
+    }
+}
 function findUp(start, marker) {
     let dir = path.resolve(start);
     for (;;) {
-        if (fs.existsSync(path.join(dir, marker)))
+        if (marker === ".git" ? isGitRoot(dir) : fs.existsSync(path.join(dir, marker)))
             return dir;
         const up = path.dirname(dir);
         if (up === dir)
