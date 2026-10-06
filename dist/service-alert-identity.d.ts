@@ -30,8 +30,26 @@ declare function resolveIdentity(opts?: {
     project: string;
     service: string;
 };
+/** Current saved-or-suggested names for cwd, without writing anything. */
+declare function peekIdentity(opts?: {
+    cwd?: string;
+    env?: Env;
+}): {
+    project: string;
+    service: string;
+    file: string;
+};
+/** Persist chosen names for cwd (used by `service-alert init`). Returns false if the file is unwritable. */
+declare function saveIdentity(opts: {
+    cwd?: string;
+    env?: Env;
+    project: string;
+    service: string;
+}): boolean;
 declare const _default: {
     resolveIdentity: typeof resolveIdentity;
+    peekIdentity: typeof peekIdentity;
+    saveIdentity: typeof saveIdentity;
     suggestProject: typeof suggestProject;
     suggestService: typeof suggestService;
     pascal: typeof pascal;

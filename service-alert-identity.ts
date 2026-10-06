@@ -111,4 +111,26 @@ function resolveIdentity(opts: { cwd?: string; env?: Env; project?: string; serv
   return { project, service };
 }
 
-export = { resolveIdentity, suggestProject, suggestService, pascal };
+/** Current saved-or-suggested names for cwd, without writing anything. */
+function peekIdentity(opts: { cwd?: string; env?: Env } = {}): { project: string; service: string; file: string } {
+  const env = opts.env ?? process.env;
+  const cwd = opts.cwd ?? process.cwd();
+  const file = storeFile(env);
+  const store = readStore(file);
+  const p = suggestProject(cwd);
+  const v = suggestService(cwd);
+  return { project: store.projects[p.key] ?? p.name, service: store.services[v.key] ?? v.name, file };
+}
+
+/** Persist chosen names for cwd (used by `service-alert init`). Returns false if the file is unwritable. */
+function saveIdentity(opts: { cwd?: string; env?: Env; project: string; service: string }): boolean {
+  const env = opts.env ?? process.env;
+  const cwd = opts.cwd ?? process.cwd();
+  const file = storeFile(env);
+  const store = readStore(file);
+  store.projects[suggestProject(cwd).key] = opts.project;
+  store.services[suggestService(cwd).key] = opts.service;
+  return writeStore(file, store);
+}
+
+export = { resolveIdentity, peekIdentity, saveIdentity, suggestProject, suggestService, pascal };

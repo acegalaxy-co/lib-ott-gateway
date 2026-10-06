@@ -101,3 +101,15 @@ describe("service-alert identity", () => {
     assert.ok(id.project && id.service);
   });
 });
+
+describe("service-alert init", () => {
+  it("peek + save persist chosen names", () => {
+    const { peekIdentity, saveIdentity } = require("../service-alert-identity.ts");
+    const state = tmp();
+    const env = { ALERT_STATE_DIR: state };
+    const cwd = tmp();
+    assert.ok(peekIdentity({ cwd, env }).project);
+    assert.equal(saveIdentity({ cwd, env, project: "Crawler", service: "tiktok" }), true);
+    assert.deepEqual(resolveIdentity({ cwd, env }), { project: "Crawler", service: "tiktok" });
+  });
+});

@@ -3,8 +3,11 @@
 // CLI for bash services/cron wrappers:
 //   tail -15 out.log | service-alert --service seo-google-daily --status fail \
 //     --project Crawler --title "Daily report" --field exit=1 [--env-file .env]
+//   service-alert init [--project X] [--service Y] [--yes]   # pick + save names for this folder
 // Detail is read from stdin (when piped). Exit 0 always — alerting is best-effort.
+const readline = require("node:readline/promises");
 const { sendServiceAlert } = require("../service-alert");
+const { peekIdentity, saveIdentity } = require("../service-alert-identity");
 
 function parseArgs(argv: string[]) {
   const out: { fields: Record<string, string>; [k: string]: unknown } = { fields: {} };
@@ -27,7 +30,28 @@ async function readStdin(): Promise<string> {
   return data;
 }
 
+// `service-alert init [--project X] [--service Y] [--yes]` — choose + save names for the current folder.
+// Without --yes (and on a TTY) it asks, Enter accepts the suggestion.
+async function init(argv: string[]) {
+  const yes = argv.includes("--yes");
+  const args = parseArgs(argv.filter((a) => a !== "--yes"));
+  const cur = peekIdentity();
+  let project = String(args.project || "");
+  let service = String(args.service || "");
+  const ask = process.stdin.isTTY && !yes;
+  if (ask) {
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    if (!project) project = (await rl.question(`Project [${cur.project}]: `)).trim();
+    if (!service) service = (await rl.question(`Service [${cur.service}]: `)).trim();
+    rl.close();
+  }
+  project = project || cur.project;
+  service = service || cur.service;
+  console.log(saveIdentity({ project, service }) ? `service-alert: saved project=${project} service=${service} (${cur.file})` : "service-alert: cannot write state file");
+}
+
 async function main() {
+  if (process.argv[2] === "init") return init(process.argv.slice(3));
   const args = parseArgs(process.argv.slice(2));
   const service = String(args.service || "");
   const title = String(args.title || "");
