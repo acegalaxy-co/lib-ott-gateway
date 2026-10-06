@@ -11,11 +11,12 @@
  */
 type AlertStatus = "ok" | "fail" | "warn" | "info" | "queued" | "running";
 interface ServiceAlert {
-    service: string;
+    /** Service name; when omitted it is suggested from the nearest package.json folder and saved. */
+    service?: string;
     status: AlertStatus;
     title: string;
     host?: string;
-    /** Short project name shown as the 2nd bracket, e.g. "Crawler". Omitted when empty. */
+    /** Short project name (2nd bracket). Order: this > env ALERT_PROJECT > saved/suggested from git-root folder. */
     project?: string;
     fields?: Record<string, string | number | undefined | null>;
     detail?: string;

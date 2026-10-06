@@ -1,5 +1,6 @@
 "use strict";
 const { createTelegramRateLimiter, sendMessageWithRetry } = require("./adapters/telegram/rate");
+const { resolveIdentity } = require("./service-alert-identity");
 const ICONS = { ok: "✅", fail: "❌", warn: "⚠️", info: "ℹ️", queued: "⏳", running: "🔄" };
 // ponytail: hard cap below Telegram's 4096 limit; long output is truncated, not split.
 const MAX_LEN = 3500;
@@ -7,7 +8,7 @@ function formatServiceAlert(a) {
     const status = a.status in ICONS ? a.status : "info";
     const env = `[${a.host || "Local"}]`;
     const project = a.project ? `[${a.project}]` : "";
-    const lines = [`${env}${project} [${ICONS[status]} ${status}] Service ${a.service}`];
+    const lines = [`${env}${project} [${ICONS[status]} ${status}] Service ${a.service ?? ""}`];
     if (a.title)
         lines.push(a.title);
     for (const [k, v] of Object.entries(a.fields ?? {})) {
@@ -40,7 +41,8 @@ async function sendServiceAlert(a, opts = {}) {
     const chatId = opts.chatId ?? target.chatId;
     if (!token || !chatId)
         return { sent: false, reason: "telegram not configured" };
-    const text = formatServiceAlert({ ...a, host: a.host || target.host, project: a.project || target.project });
+    const id = resolveIdentity({ env: opts.env, project: a.project || target.project, service: a.service });
+    const text = formatServiceAlert({ ...a, host: a.host || target.host, project: id.project, service: id.service });
     try {
         await sendMessageWithRetry({
             apiBase: opts.apiBase || "https://api.telegram.org",

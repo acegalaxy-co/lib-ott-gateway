@@ -32,8 +32,8 @@ async function main() {
   const service = String(args.service || "");
   const title = String(args.title || "");
   const status = String(args.status || "info");
-  if (!service || !title || !["ok", "fail", "warn", "info", "queued", "running"].includes(status)) {
-    console.error("usage: service-alert --service <name> --status ok|fail|warn|info|queued|running [--project <name>] --title <text> [--field k=v]... [--env-file path] < detail");
+  if (!title || !["ok", "fail", "warn", "info", "queued", "running"].includes(status)) {
+    console.error("usage: service-alert [--service <name>] --status ok|fail|warn|info|queued|running [--project <name>] --title <text> [--field k=v]... [--env-file path] < detail");
     return;
   }
   if (args["env-file"]) {

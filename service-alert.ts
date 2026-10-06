@@ -1,5 +1,6 @@
 "use strict";
 const { createTelegramRateLimiter, sendMessageWithRetry } = require("./adapters/telegram/rate");
+const { resolveIdentity } = require("./service-alert-identity");
 
 /**
  * Shared Telegram alert format for background services (pm2 workers, cron jobs).
@@ -16,11 +17,12 @@ const { createTelegramRateLimiter, sendMessageWithRetry } = require("./adapters/
 type AlertStatus = "ok" | "fail" | "warn" | "info" | "queued" | "running";
 
 interface ServiceAlert {
-  service: string;
+  /** Service name; when omitted it is suggested from the nearest package.json folder and saved. */
+  service?: string;
   status: AlertStatus;
   title: string;
   host?: string;
-  /** Short project name shown as the 2nd bracket, e.g. "Crawler". Omitted when empty. */
+  /** Short project name (2nd bracket). Order: this > env ALERT_PROJECT > saved/suggested from git-root folder. */
   project?: string;
   fields?: Record<string, string | number | undefined | null>;
   detail?: string;
@@ -41,7 +43,7 @@ function formatServiceAlert(a: ServiceAlert): string {
   const status: AlertStatus = a.status in ICONS ? a.status : "info";
   const env = `[${a.host || "Local"}]`;
   const project = a.project ? `[${a.project}]` : "";
-  const lines = [`${env}${project} [${ICONS[status]} ${status}] Service ${a.service}`];
+  const lines = [`${env}${project} [${ICONS[status]} ${status}] Service ${a.service ?? ""}`];
   if (a.title) lines.push(a.title);
   for (const [k, v] of Object.entries(a.fields ?? {})) {
     if (v !== undefined && v !== null && v !== "") lines.push(`${k}: ${v}`);
@@ -76,7 +78,8 @@ async function sendServiceAlert(
   const token = opts.token ?? target.token;
   const chatId = opts.chatId ?? target.chatId;
   if (!token || !chatId) return { sent: false, reason: "telegram not configured" };
-  const text = formatServiceAlert({ ...a, host: a.host || target.host, project: a.project || target.project });
+  const id = resolveIdentity({ env: opts.env, project: a.project || target.project, service: a.service });
+  const text = formatServiceAlert({ ...a, host: a.host || target.host, project: id.project, service: id.service });
   try {
     await sendMessageWithRetry({
       apiBase: opts.apiBase || "https://api.telegram.org",

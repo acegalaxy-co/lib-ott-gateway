@@ -1,6 +1,12 @@
 const { describe, it, afterEach } = require("node:test");
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
 const { formatServiceAlert, sendServiceAlert } = require("../service-alert.ts");
+const { resolveIdentity, pascal } = require("../service-alert-identity.ts");
+
+const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), "sa-"));
 
 describe("service-alert", () => {
   const originalFetch = globalThis.fetch;
@@ -43,11 +49,11 @@ describe("service-alert", () => {
   it("sends via env fallback and never leaks token on error", async () => {
     let body;
     globalThis.fetch = async (_url, init) => ((body = JSON.parse(init.body)), new Response("{}", { status: 200 }));
-    const env = { NEXUS_TELEGRAM_BOT_TOKEN: "tok-secret-1", NEXUS_TELEGRAM_CHANNEL_STATUS_ALERT: "chat1", HOST_LABEL: "Mac255" };
+    const env = { NEXUS_TELEGRAM_BOT_TOKEN: "tok-secret-1", NEXUS_TELEGRAM_CHANNEL_STATUS_ALERT: "chat1", HOST_LABEL: "Mac255", ALERT_PROJECT: "P", ALERT_STATE_DIR: tmp() };
     const ok = await sendServiceAlert({ service: "s", status: "ok", title: "t" }, { env });
     assert.equal(ok.sent, true);
     assert.equal(body.chat_id, "chat1");
-    assert.ok(body.text.startsWith("[Mac255] [✅ ok] Service s"));
+    assert.ok(body.text.startsWith("[Mac255][P] [✅ ok] Service s"));
 
     globalThis.fetch = async () => {
       throw new Error("connect failed https://api.telegram.org/bottok-secret-1/sendMessage");
@@ -55,5 +61,43 @@ describe("service-alert", () => {
     const bad = await sendServiceAlert({ service: "s", status: "fail", title: "t" }, { env });
     assert.equal(bad.sent, false);
     assert.ok(!bad.reason.includes("tok-secret-1"));
+  });
+});
+
+describe("service-alert identity", () => {
+  it("pascal-cases folder names", () => {
+    assert.equal(pascal("bds-hue"), "BdsHue");
+    assert.equal(pascal("share_fp2group tiktok"), "ShareFp2groupTiktok");
+  });
+
+  it("suggests project from git root and service from package.json folder, saves, then reuses", () => {
+    const state = tmp();
+    const root = tmp();
+    const repo = path.join(root, "my-repo");
+    const svc = path.join(repo, "services", "nhadathue-tiktok");
+    fs.mkdirSync(path.join(repo, ".git"), { recursive: true });
+    fs.mkdirSync(svc, { recursive: true });
+    fs.writeFileSync(path.join(svc, "package.json"), "{}");
+    const env = { ALERT_STATE_DIR: state };
+    const first = resolveIdentity({ cwd: svc, env });
+    assert.deepEqual(first, { project: "MyRepo", service: "nhadathue-tiktok" });
+    // user renames in the saved file -> reused on next call
+    const file = path.join(state, "service-alert.json");
+    const saved = JSON.parse(fs.readFileSync(file, "utf8"));
+    saved.projects[Object.keys(saved.projects)[0]] = "Crawler";
+    fs.writeFileSync(file, JSON.stringify(saved));
+    assert.equal(resolveIdentity({ cwd: svc, env }).project, "Crawler");
+  });
+
+  it("explicit service and env ALERT_PROJECT win and nothing is saved", () => {
+    const state = tmp();
+    const id = resolveIdentity({ cwd: tmp(), env: { ALERT_STATE_DIR: state, ALERT_PROJECT: "X" }, service: "svc" });
+    assert.deepEqual(id, { project: "X", service: "svc" });
+    assert.equal(fs.existsSync(path.join(state, "service-alert.json")), false);
+  });
+
+  it("falls back to suggestion when the state dir is unwritable", () => {
+    const id = resolveIdentity({ cwd: "/tmp", env: { ALERT_STATE_DIR: "/dev/null/x" } });
+    assert.ok(id.project && id.service);
   });
 });
