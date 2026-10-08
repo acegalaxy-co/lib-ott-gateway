@@ -19,17 +19,17 @@ describe("service-alert", () => {
       service: "seo-google-daily",
       status: "fail",
       title: "Daily report",
-      host: "Mac255",
+      host: "MacMini2",
       project: "Crawler",
       fields: { exit: 1, skipped: undefined },
       detail: "line1\nline2",
     });
-    assert.equal(text, "[Mac255][Crawler] [❌ fail] Service seo-google-daily\nDaily report\nexit: 1\n---\nline1\nline2");
+    assert.equal(text, "[MacMini2][Crawler] [❌ fail] Service seo-google-daily\nDaily report\nexit: 1\n---\nline1\nline2");
   });
 
   it("queued status, no project bracket when project empty", () => {
-    const text = formatServiceAlert({ service: "nhadathue-tiktok", status: "queued", title: "", host: "Mac255" });
-    assert.equal(text, "[Mac255] [⏳ queued] Service nhadathue-tiktok");
+    const text = formatServiceAlert({ service: "nhadathue-tiktok", status: "queued", title: "", host: "MacMini2" });
+    assert.equal(text, "[MacMini2] [⏳ queued] Service nhadathue-tiktok");
   });
 
   it("caps long text at 3500 chars", () => {
@@ -49,11 +49,11 @@ describe("service-alert", () => {
   it("sends via env fallback and never leaks token on error", async () => {
     let body;
     globalThis.fetch = async (_url, init) => ((body = JSON.parse(init.body)), new Response("{}", { status: 200 }));
-    const env = { NEXUS_TELEGRAM_BOT_TOKEN: "tok-secret-1", NEXUS_TELEGRAM_CHANNEL_STATUS_ALERT: "chat1", HOST_LABEL: "Mac255", ALERT_PROJECT: "P", ALERT_STATE_DIR: tmp() };
+    const env = { NEXUS_TELEGRAM_BOT_TOKEN: "tok-secret-1", NEXUS_TELEGRAM_CHANNEL_STATUS_ALERT: "chat1", HOST_LABEL: "MacMini2", ALERT_PROJECT: "P", ALERT_STATE_DIR: tmp() };
     const ok = await sendServiceAlert({ service: "s", status: "ok", title: "t" }, { env });
     assert.equal(ok.sent, true);
     assert.equal(body.chat_id, "chat1");
-    assert.ok(body.text.startsWith("[Mac255][P] [✅ ok] Service s"));
+    assert.ok(body.text.startsWith("[MacMini2][P] [✅ ok] Service s"));
 
     globalThis.fetch = async () => {
       throw new Error("connect failed https://api.telegram.org/bottok-secret-1/sendMessage");
