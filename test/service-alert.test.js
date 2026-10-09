@@ -38,6 +38,26 @@ describe("service-alert", () => {
     assert.ok(text.endsWith("…"));
   });
 
+  it("links → HTML-escaped text + <a> line before detail", () => {
+    const text = formatServiceAlert({
+      service: "s", status: "ok", title: "a<b>&c", host: "H",
+      fields: { month: "2026-10" },
+      links: { Invoices: "https://x.test/p?v=1&q=\"" },
+      detail: "1 < 2",
+    });
+    assert.equal(text, '[H] [✅ ok] Service s\na&lt;b&gt;&amp;c\nmonth: 2026-10\n<a href="https://x.test/p?v=1&amp;q=&quot;">Invoices</a>\n---\n1 &lt; 2');
+  });
+
+  it("sends parse_mode HTML only when links set", async () => {
+    const bodies = [];
+    globalThis.fetch = async (_url, init) => (bodies.push(JSON.parse(init.body)), new Response("{}", { status: 200 }));
+    const env = { NEXUS_TELEGRAM_BOT_TOKEN: "t", NEXUS_TELEGRAM_CHANNEL_STATUS_ALERT: "c", ALERT_PROJECT: "P", ALERT_STATE_DIR: tmp() };
+    await sendServiceAlert({ service: "s", status: "ok", title: "t" }, { env });
+    await sendServiceAlert({ service: "s", status: "ok", title: "t", links: { L: "https://x.test" } }, { env });
+    assert.equal(bodies[0].parse_mode, undefined);
+    assert.equal(bodies[1].parse_mode, "HTML");
+  });
+
   it("no-op when token/chat missing", async () => {
     let called = false;
     globalThis.fetch = async () => ((called = true), new Response("{}"));

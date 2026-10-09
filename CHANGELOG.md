@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-10-09
+
+### Added
+- `service-alert`: optional `links: { label: url }` → rendered as one line of
+  clickable `<a>` links before `---` detail; message switches to
+  `parse_mode: "HTML"` (all text HTML-escaped). Without `links` output is
+  unchanged plain text.
+
 ## [0.6.0] - 2026-10-01
 
 ### Added

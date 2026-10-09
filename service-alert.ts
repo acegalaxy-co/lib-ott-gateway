@@ -26,6 +26,8 @@ interface ServiceAlert {
   project?: string;
   fields?: Record<string, string | number | undefined | null>;
   detail?: string;
+  /** Clickable links `{ label: url }`, rendered on one line before detail. Switches message to HTML parse mode. */
+  links?: Record<string, string>;
 }
 
 interface SendServiceAlertOptions {
@@ -39,7 +41,13 @@ const ICONS: Record<AlertStatus, string> = { ok: "✅", fail: "❌", warn: "⚠�
 // ponytail: hard cap below Telegram's 4096 limit; long output is truncated, not split.
 const MAX_LEN = 3500;
 
+const escHtml = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const hasLinks = (a: ServiceAlert) => Object.keys(a.links ?? {}).length > 0;
+
+/** Plain text, or HTML (escaped) when `links` is set — send with parse_mode HTML in that case. */
 function formatServiceAlert(a: ServiceAlert): string {
+  const html = hasLinks(a);
+  const esc = html ? escHtml : (s: string) => s;
   const status: AlertStatus = a.status in ICONS ? a.status : "info";
   const env = `[${a.host || "Local"}]`;
   const project = a.project ? `[${a.project}]` : "";
@@ -48,10 +56,17 @@ function formatServiceAlert(a: ServiceAlert): string {
   for (const [k, v] of Object.entries(a.fields ?? {})) {
     if (v !== undefined && v !== null && v !== "") lines.push(`${k}: ${v}`);
   }
+  if (html) {
+    lines.forEach((l, i) => (lines[i] = escHtml(l)));
+    lines.push(Object.entries(a.links!).map(([label, url]) => `<a href="${escHtml(url).replace(/"/g, "&quot;")}">${escHtml(label)}</a>`).join(" | "));
+  }
   const detail = (a.detail ?? "").trim();
-  if (detail) lines.push("---", detail);
+  if (detail) lines.push("---", esc(detail));
   const text = lines.join("\n");
-  return text.length > MAX_LEN ? `${text.slice(0, MAX_LEN - 1)}…` : text;
+  if (text.length <= MAX_LEN) return text;
+  // ponytail: truncation only cuts detail-area text (links line precedes it); drop a dangling partial entity.
+  const cut = text.slice(0, MAX_LEN - 1);
+  return `${html ? cut.replace(/&[a-z]*$/, "") : cut}…`;
 }
 
 /** Resolve bot token / chat / host from env — same var names every service already uses. */
@@ -86,7 +101,7 @@ async function sendServiceAlert(
       token,
       chatId,
       text,
-      extra: { disable_web_page_preview: true },
+      extra: hasLinks(a) ? { disable_web_page_preview: true, parse_mode: "HTML" } : { disable_web_page_preview: true },
       limiter,
     });
     return { sent: true };

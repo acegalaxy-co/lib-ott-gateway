@@ -20,6 +20,8 @@ interface ServiceAlert {
     project?: string;
     fields?: Record<string, string | number | undefined | null>;
     detail?: string;
+    /** Clickable links `{ label: url }`, rendered on one line before detail. Switches message to HTML parse mode. */
+    links?: Record<string, string>;
 }
 interface SendServiceAlertOptions {
     token?: string;
@@ -27,6 +29,7 @@ interface SendServiceAlertOptions {
     env?: Record<string, string | undefined>;
     apiBase?: string;
 }
+/** Plain text, or HTML (escaped) when `links` is set — send with parse_mode HTML in that case. */
 declare function formatServiceAlert(a: ServiceAlert): string;
 /** Resolve bot token / chat / host from env — same var names every service already uses. */
 declare function resolveAlertTarget(env?: Record<string, string | undefined>): {
