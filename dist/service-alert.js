@@ -37,8 +37,8 @@ function formatServiceAlert(a) {
 /** Resolve bot token / chat / host from env — same var names every service already uses. */
 function resolveAlertTarget(env = process.env) {
     return {
-        token: env.TELEGRAM_ALERT_BOT_TOKEN || env.NEXUS_TELEGRAM_BOT_TOKEN || "",
-        chatId: env.TELEGRAM_ALERT_CHAT_ID || env.NEXUS_TELEGRAM_CHANNEL_STATUS_ALERT || "",
+        token: env.TELEGRAM_BOT_TOKEN_ALERT || env.TELEGRAM_BOT_TOKEN_NEXUS || "",
+        chatId: env.TELEGRAM_CHAT_ALERT_ID || env.TELEGRAM_CHANNEL_STATUS_ALERT_ID || "",
         host: env.HOST_LABEL || "Local",
         project: env.ALERT_PROJECT || "",
     };

@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-10-11
+
+### BREAKING
+- `service-alert`: env names renamed to `<SUPPLIER>_<TYPE>_<PURPOSE>`. Old names
+  are no longer read (no fallback) — treated as not configured (no-op).
+
+| Old | New |
+|---|---|
+| `TELEGRAM_ALERT_BOT_TOKEN` | `TELEGRAM_BOT_TOKEN_ALERT` |
+| `TELEGRAM_ALERT_CHAT_ID` | `TELEGRAM_CHAT_ALERT_ID` |
+| `NEXUS_TELEGRAM_BOT_TOKEN` | `TELEGRAM_BOT_TOKEN_NEXUS` |
+| `NEXUS_TELEGRAM_CHANNEL_STATUS_ALERT` | `TELEGRAM_CHANNEL_STATUS_ALERT_ID` |
+
 ## [0.10.0] - 2026-10-09
 
 ### Added

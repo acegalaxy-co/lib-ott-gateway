@@ -212,8 +212,8 @@ await sa.sendServiceAlert({ service: "my-worker", status: "fail", title: "tick e
 
 Bash: `tail -15 out.log | npx service-alert --service my-job --status fail --title "Daily" --field exit=1 --env-file .env`.
 
-Env: `TELEGRAM_ALERT_BOT_TOKEN` (fallback `NEXUS_TELEGRAM_BOT_TOKEN`),
-`TELEGRAM_ALERT_CHAT_ID` (fallback `NEXUS_TELEGRAM_CHANNEL_STATUS_ALERT`),
+Env: `TELEGRAM_BOT_TOKEN_ALERT` (fallback `TELEGRAM_BOT_TOKEN_NEXUS`),
+`TELEGRAM_CHAT_ALERT_ID` (fallback `TELEGRAM_CHANNEL_STATUS_ALERT_ID`),
 `HOST_LABEL`. Missing token/chat → no-op. Never throws; token redacted from errors.
 
 ## Layout

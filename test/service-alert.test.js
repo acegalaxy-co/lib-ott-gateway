@@ -51,7 +51,7 @@ describe("service-alert", () => {
   it("sends parse_mode HTML only when links set", async () => {
     const bodies = [];
     globalThis.fetch = async (_url, init) => (bodies.push(JSON.parse(init.body)), new Response("{}", { status: 200 }));
-    const env = { NEXUS_TELEGRAM_BOT_TOKEN: "t", NEXUS_TELEGRAM_CHANNEL_STATUS_ALERT: "c", ALERT_PROJECT: "P", ALERT_STATE_DIR: tmp() };
+    const env = { TELEGRAM_BOT_TOKEN_NEXUS: "t", TELEGRAM_CHANNEL_STATUS_ALERT_ID: "c", ALERT_PROJECT: "P", ALERT_STATE_DIR: tmp() };
     await sendServiceAlert({ service: "s", status: "ok", title: "t" }, { env });
     await sendServiceAlert({ service: "s", status: "ok", title: "t", links: { L: "https://x.test" } }, { env });
     assert.equal(bodies[0].parse_mode, undefined);
@@ -66,10 +66,19 @@ describe("service-alert", () => {
     assert.equal(called, false);
   });
 
+  it("old env names are no longer read (treated as not configured)", async () => {
+    let called = false;
+    globalThis.fetch = async () => ((called = true), new Response("{}"));
+    const env = { NEXUS_TELEGRAM_BOT_TOKEN: "t", NEXUS_TELEGRAM_CHANNEL_STATUS_ALERT: "c", TELEGRAM_ALERT_BOT_TOKEN: "t", TELEGRAM_ALERT_CHAT_ID: "c", ALERT_PROJECT: "P", ALERT_STATE_DIR: tmp() };
+    const r = await sendServiceAlert({ service: "s", status: "ok", title: "t" }, { env });
+    assert.equal(r.sent, false);
+    assert.equal(called, false);
+  });
+
   it("sends via env fallback and never leaks token on error", async () => {
     let body;
     globalThis.fetch = async (_url, init) => ((body = JSON.parse(init.body)), new Response("{}", { status: 200 }));
-    const env = { NEXUS_TELEGRAM_BOT_TOKEN: "tok-secret-1", NEXUS_TELEGRAM_CHANNEL_STATUS_ALERT: "chat1", HOST_LABEL: "MacMini2", ALERT_PROJECT: "P", ALERT_STATE_DIR: tmp() };
+    const env = { TELEGRAM_BOT_TOKEN_NEXUS: "tok-secret-1", TELEGRAM_CHANNEL_STATUS_ALERT_ID: "chat1", HOST_LABEL: "MacMini2", ALERT_PROJECT: "P", ALERT_STATE_DIR: tmp() };
     const ok = await sendServiceAlert({ service: "s", status: "ok", title: "t" }, { env });
     assert.equal(ok.sent, true);
     assert.equal(body.chat_id, "chat1");
