@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-10-14
+
+### Added
+- `service-alert`: optional `photoPath` option / CLI `--photo <path>` → sends via
+  Telegram `sendPhoto` with the alert text as caption. Caption > 1024 chars →
+  photo gets header+title only and the full text follows as a normal message.
+  Missing/empty/unreadable/>10 MB file or `sendPhoto` failure → text-only send
+  with a `photo: not attached (<reason>)` detail line (alert is never lost).
+- `adapters/telegram/rate`: `sendPhotoWithRetry` (multipart, same throttle + 429 handling).
+
 ## [0.11.0] - 2026-10-11
 
 ### BREAKING

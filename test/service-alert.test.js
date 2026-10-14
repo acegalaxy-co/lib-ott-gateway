@@ -160,3 +160,84 @@ describe("service-alert name shortening", () => {
     assert.equal(kebab("a-b-c-d-e-f-g-h-i-j-k-l-m-n-o-p-q-r"), "a-b-c-d-e-f-g-h-i-j-k-l-m-n-o-p-q-r");
   });
 });
+
+describe("service-alert photo", () => {
+  const originalFetch = globalThis.fetch;
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+  const dir = tmp();
+  const png = path.join(dir, "shot.png");
+  fs.writeFileSync(png, Buffer.from([0x89, 0x50, 0x4e, 0x47, 1, 2, 3]));
+  const env = () => ({ TELEGRAM_BOT_TOKEN_NEXUS: "SECRETTOKEN", TELEGRAM_CHANNEL_STATUS_ALERT_ID: "c", ALERT_PROJECT: "P", ALERT_STATE_DIR: tmp() });
+  const alert = { service: "s", status: "ok", title: "t", host: "H", detail: "d" };
+  const mockFetch = (calls, photoStatus = 200) => {
+    globalThis.fetch = async (url, init) => {
+      const isPhoto = String(url).endsWith("/sendPhoto");
+      calls.push({ method: isPhoto ? "sendPhoto" : "sendMessage", body: init.body });
+      return isPhoto && photoStatus !== 200 ? new Response('{"ok":false}', { status: photoStatus }) : new Response("{}", { status: 200 });
+    };
+  };
+
+  it("photo happy path: one sendPhoto with caption + file, no sendMessage", async () => {
+    const calls = [];
+    mockFetch(calls);
+    const r = await sendServiceAlert(alert, { env: env(), photoPath: png });
+    assert.equal(r.sent, true);
+    assert.deepEqual(calls.map((c) => c.method), ["sendPhoto"]);
+    const f = calls[0].body;
+    assert.equal(f.get("chat_id"), "c");
+    assert.equal(f.get("caption"), "[H][P] [✅ ok] Service s\nt\n---\nd");
+    assert.equal(f.get("photo").name, "shot.png");
+    assert.equal(f.get("photo").size, 7);
+  });
+
+  it("long text: sendPhoto with short caption then full sendMessage", async () => {
+    const calls = [];
+    mockFetch(calls);
+    const long = { ...alert, detail: "x".repeat(2000) };
+    await sendServiceAlert(long, { env: env(), photoPath: png });
+    assert.deepEqual(calls.map((c) => c.method), ["sendPhoto", "sendMessage"]);
+    assert.equal(calls[0].body.get("caption"), "[H][P] [✅ ok] Service s\nt");
+    assert.ok(JSON.parse(calls[1].body).text.length > 1024);
+  });
+
+  it("missing file: text-only with 'photo: not attached' line", async () => {
+    const calls = [];
+    mockFetch(calls);
+    const r = await sendServiceAlert(alert, { env: env(), photoPath: path.join(dir, "nope.png") });
+    assert.equal(r.sent, true);
+    assert.deepEqual(calls.map((c) => c.method), ["sendMessage"]);
+    const text = JSON.parse(calls[0].body).text;
+    assert.ok(text.endsWith("d\nphoto: not attached (file not found)"));
+  });
+
+  it("empty file: text-only fallback", async () => {
+    const calls = [];
+    mockFetch(calls);
+    const empty = path.join(dir, "empty.png");
+    fs.writeFileSync(empty, "");
+    await sendServiceAlert(alert, { env: env(), photoPath: empty });
+    assert.deepEqual(calls.map((c) => c.method), ["sendMessage"]);
+    assert.match(JSON.parse(calls[0].body).text, /photo: not attached \(file empty\)/);
+  });
+
+  it("sendPhoto error: text-only fallback, no token/url in reason", async () => {
+    const calls = [];
+    mockFetch(calls, 400);
+    const r = await sendServiceAlert({ ...alert, detail: "" }, { env: env(), photoPath: png });
+    assert.equal(r.sent, true);
+    assert.deepEqual(calls.map((c) => c.method), ["sendPhoto", "sendMessage"]);
+    const text = JSON.parse(calls[1].body).text;
+    assert.match(text, /---\nphoto: not attached \(telegram 400/);
+    assert.ok(!text.includes("SECRETTOKEN") && !text.includes("api.telegram.org"));
+  });
+
+  it("text-only call without photoPath is unchanged (no photo line)", async () => {
+    const calls = [];
+    mockFetch(calls);
+    await sendServiceAlert(alert, { env: env() });
+    assert.deepEqual(calls.map((c) => c.method), ["sendMessage"]);
+    assert.equal(JSON.parse(calls[0].body).text, "[H][P] [✅ ok] Service s\nt\n---\nd");
+  });
+});

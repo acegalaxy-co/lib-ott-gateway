@@ -28,6 +28,8 @@ interface SendServiceAlertOptions {
     chatId?: string;
     env?: Record<string, string | undefined>;
     apiBase?: string;
+    /** Local image file attached via Telegram sendPhoto (alert text = caption). Any failure falls back to text-only + a `photo: not attached (<reason>)` detail line. */
+    photoPath?: string;
 }
 /** Plain text, or HTML (escaped) when `links` is set — send with parse_mode HTML in that case. */
 declare function formatServiceAlert(a: ServiceAlert): string;

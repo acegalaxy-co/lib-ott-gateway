@@ -29,9 +29,28 @@ interface SendMessageWithRetryOptions {
  * @throws on non-429 HTTP error or after exhausting 429 retries.
  */
 declare function sendMessageWithRetry({ apiBase, token, chatId, text, extra, limiter, maxRetry, timeoutMs, }: SendMessageWithRetryOptions): Promise<unknown>;
+interface SendPhotoWithRetryOptions {
+    apiBase: string;
+    token: string;
+    chatId: string | number;
+    photo: Blob;
+    filename: string;
+    caption?: string;
+    extra?: Record<string, string | number | boolean>;
+    limiter: RateLimiter;
+    maxRetry?: number;
+    timeoutMs?: number;
+}
+/**
+ * Send one Telegram photo (multipart/form-data `sendPhoto`), same throttle + 429 handling
+ * as sendMessageWithRetry. Error messages never include the URL/token.
+ * @throws on non-429 HTTP error or after exhausting 429 retries.
+ */
+declare function sendPhotoWithRetry({ apiBase, token, chatId, photo, filename, caption, extra, limiter, maxRetry, timeoutMs, }: SendPhotoWithRetryOptions): Promise<unknown>;
 declare const _default: {
     createTelegramRateLimiter: typeof createTelegramRateLimiter;
     sendMessageWithRetry: typeof sendMessageWithRetry;
+    sendPhotoWithRetry: typeof sendPhotoWithRetry;
 };
 export = _default;
 //# sourceMappingURL=rate.d.ts.map

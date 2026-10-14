@@ -125,4 +125,61 @@ async function sendMessageWithRetry({
   throw new Error(`telegram: exhausted ${maxRetry} retries on 429 (chat=${chatId})`);
 }
 
-export = { createTelegramRateLimiter, sendMessageWithRetry };
+interface SendPhotoWithRetryOptions {
+  apiBase: string;
+  token: string;
+  chatId: string | number;
+  photo: Blob;
+  filename: string;
+  caption?: string;
+  extra?: Record<string, string | number | boolean>;
+  limiter: RateLimiter;
+  maxRetry?: number;
+  timeoutMs?: number;
+}
+
+/**
+ * Send one Telegram photo (multipart/form-data `sendPhoto`), same throttle + 429 handling
+ * as sendMessageWithRetry. Error messages never include the URL/token.
+ * @throws on non-429 HTTP error or after exhausting 429 retries.
+ */
+async function sendPhotoWithRetry({
+  apiBase,
+  token,
+  chatId,
+  photo,
+  filename,
+  caption,
+  extra = {},
+  limiter,
+  maxRetry = 3,
+  timeoutMs = 30000,
+}: SendPhotoWithRetryOptions): Promise<unknown> {
+  if (!token) throw new Error("telegram-rate: token missing");
+  const url = `${apiBase}/bot${token}/sendPhoto`;
+
+  for (let attempt = 0; attempt <= maxRetry; attempt++) {
+    await limiter.acquireSlot(chatId);
+    // FormData rebuilt per attempt; Content-Type (with boundary) is set by fetch.
+    const form = new FormData();
+    form.append("chat_id", String(chatId));
+    if (caption) form.append("caption", caption);
+    for (const [k, v] of Object.entries(extra)) form.append(k, String(v));
+    form.append("photo", photo, filename);
+    const resp = await fetch(url, { method: "POST", body: form, signal: AbortSignal.timeout(timeoutMs) });
+    if (resp.ok) return resp.json().catch(() => undefined);
+
+    if (resp.status === 429 && attempt < maxRetry) {
+      const body = await resp.json().catch(() => ({}));
+      const retryAfter = Number(body?.parameters?.retry_after) || 2;
+      console.warn(`⏳ [telegram-rate] 429 chat=${chatId} sendPhoto — retry in ${retryAfter}s (attempt ${attempt + 1}/${maxRetry})`);
+      await sleep(retryAfter * 1000 + 250);
+      continue;
+    }
+    const errText = await resp.text().catch(() => "");
+    throw new Error(`telegram ${resp.status}: ${errText.slice(0, 200)}`);
+  }
+  throw new Error(`telegram: exhausted ${maxRetry} retries on 429 (chat=${chatId})`);
+}
+
+export = { createTelegramRateLimiter, sendMessageWithRetry, sendPhotoWithRetry };
