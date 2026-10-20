@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
-const { formatServiceAlert, sendServiceAlert } = require("../service-alert.ts");
+const { formatServiceAlert, sendServiceAlert, resolveAlertTarget } = require("../service-alert.ts");
 const { resolveIdentity, pascal, kebab } = require("../service-alert-identity.ts");
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), "sa-"));
@@ -64,6 +64,18 @@ describe("service-alert", () => {
     const r = await sendServiceAlert({ service: "s", status: "ok", title: "t" }, { env: {} });
     assert.equal(r.sent, false);
     assert.equal(called, false);
+  });
+
+  it("chat/email default to org channel + contact mail, env overrides", async () => {
+    let body;
+    globalThis.fetch = async (_url, init) => ((body = JSON.parse(init.body)), new Response("{}", { status: 200 }));
+    const r = await sendServiceAlert({ service: "s", status: "ok", title: "t" }, { env: { TELEGRAM_BOT_TOKEN_ALERT: "t", ALERT_PROJECT: "P", ALERT_STATE_DIR: tmp() } });
+    assert.equal(r.sent, true);
+    assert.equal(body.chat_id, "-1004454440769");
+    assert.equal(resolveAlertTarget({}).email, "contact@acegalaxy.co");
+    const o = resolveAlertTarget({ TELEGRAM_CHAT_ALERT_ID: "c2", ALERT_EMAIL: "x@example.com" });
+    assert.equal(o.chatId, "c2");
+    assert.equal(o.email, "x@example.com");
   });
 
   it("old env names are no longer read (treated as not configured)", async () => {

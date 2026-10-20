@@ -215,8 +215,9 @@ Bash: `tail -15 out.log | npx service-alert --service my-job --status fail --tit
 Photo: `sendServiceAlert(alert, { photoPath: "/path/shot.png" })` or CLI `--photo /path/shot.png` — alert text becomes the caption (> 1024 chars: short caption + full text as a follow-up message). Bad/missing/>10 MB file or `sendPhoto` error → text-only alert with a `photo: not attached (<reason>)` line.
 
 Env: `TELEGRAM_BOT_TOKEN_ALERT` (fallback `TELEGRAM_BOT_TOKEN_NEXUS`),
-`TELEGRAM_CHAT_ALERT_ID` (fallback `TELEGRAM_CHANNEL_STATUS_ALERT_ID`),
-`HOST_LABEL`. Missing token/chat → no-op. Never throws; token redacted from errors.
+`TELEGRAM_CHAT_ALERT_ID` (fallback `TELEGRAM_CHANNEL_STATUS_ALERT_ID`, default `-1004454440769` = channel Security AceGalaxy),
+`ALERT_EMAIL` (default `contact@acegalaxy.co`, exposed via `resolveAlertTarget().email` / `DEFAULT_ALERT_EMAIL` — lib does not send mail),
+`HOST_LABEL`. Missing token → no-op. Never throws; token redacted from errors.
 
 ## Layout
 

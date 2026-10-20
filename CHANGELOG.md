@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Default alert receivers: chat `-1004454440769` (channel Security AceGalaxy) when no `TELEGRAM_CHAT_ALERT_ID`/`TELEGRAM_CHANNEL_STATUS_ALERT_ID`; `ALERT_EMAIL` default `contact@acegalaxy.co` (`resolveAlertTarget().email`, `DEFAULT_ALERT_EMAIL`). Services with only a bot token now send instead of no-op.
+
 ## [0.12.0] - 2026-10-14
 
 ### Added
