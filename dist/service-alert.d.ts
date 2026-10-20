@@ -37,6 +37,7 @@ declare function formatServiceAlert(a: ServiceAlert): string;
 declare function resolveAlertTarget(env?: Record<string, string | undefined>): {
     token: string;
     chatId: string;
+    email: string;
     host: string;
     project: string;
 };
@@ -52,6 +53,8 @@ declare const _default: {
     formatServiceAlert: typeof formatServiceAlert;
     sendServiceAlert: typeof sendServiceAlert;
     resolveAlertTarget: typeof resolveAlertTarget;
+    DEFAULT_ALERT_CHAT_ID: string;
+    DEFAULT_ALERT_EMAIL: string;
 };
 export = _default;
 //# sourceMappingURL=service-alert.d.ts.map

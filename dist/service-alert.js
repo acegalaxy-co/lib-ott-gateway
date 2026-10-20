@@ -40,11 +40,15 @@ function formatServiceAlert(a) {
     const cut = text.slice(0, MAX_LEN - 1);
     return `${html ? cut.replace(/&[a-z]*$/, "") : cut}…`;
 }
+/** Org-wide default receivers (channel "Security AceGalaxy" @acesecutiry; numeric id survives going private). Env overrides. */
+const DEFAULT_ALERT_CHAT_ID = "-1004454440769";
+const DEFAULT_ALERT_EMAIL = "contact@acegalaxy.co";
 /** Resolve bot token / chat / host from env — same var names every service already uses. */
 function resolveAlertTarget(env = process.env) {
     return {
         token: env.TELEGRAM_BOT_TOKEN_ALERT || env.TELEGRAM_BOT_TOKEN_NEXUS || "",
-        chatId: env.TELEGRAM_CHAT_ALERT_ID || env.TELEGRAM_CHANNEL_STATUS_ALERT_ID || "",
+        chatId: env.TELEGRAM_CHAT_ALERT_ID || env.TELEGRAM_CHANNEL_STATUS_ALERT_ID || DEFAULT_ALERT_CHAT_ID,
+        email: env.ALERT_EMAIL || DEFAULT_ALERT_EMAIL,
         host: env.HOST_LABEL || "Local",
         project: env.ALERT_PROJECT || "",
     };
@@ -135,5 +139,5 @@ async function sendServiceAlert(a, opts = {}) {
         return { sent: false, reason: msg };
     }
 }
-module.exports = { formatServiceAlert, sendServiceAlert, resolveAlertTarget };
+module.exports = { formatServiceAlert, sendServiceAlert, resolveAlertTarget, DEFAULT_ALERT_CHAT_ID, DEFAULT_ALERT_EMAIL };
 //# sourceMappingURL=service-alert.js.map
