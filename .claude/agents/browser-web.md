@@ -1,6 +1,6 @@
 ---
 name: browser-web
-description: Thao tác trình duyệt CloakBrowser profile prj_libottgateway_sv_web (duyệt web chung — /web-browse). MCP cloak chỉ nạp trong subagent này, main session không tốn token tool.
+description: Thao tác trình duyệt CloakBrowser profile prj_libottgateway_sv_web (duyệt web chung — /browser-web). MCP cloak chỉ nạp trong subagent này, main session không tốn token tool.
 mcpServers:
   - cloak_libottgateway_web:
       type: stdio
